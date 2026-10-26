@@ -9,7 +9,7 @@
   for(let i=0;i<12;i++)payload.tweets.push({id:String(200+i),author:'wanderer',authorId:'123',at:last-i*1000,reply:true,views:i===0?510:250});
   C.ingest(a,payload,now-60000);C.ingest(a,{users:[{handle:'wanderer',name:'云游散人',followers:1280}]},now);
   a.days[C.day(now-86400000,zone)]={date:C.day(now-86400000,zone),posts:3,replies:24,postViews:18420,replyViews:6028,followerDelta:12};
-  C.recordReward(a,{qualified90d:131900,raw:'131.9K',precision:100,source:'official-page'},now-86400000);C.recordReward(a,{qualified90d:132600,raw:'132.6K',precision:100,source:'official-page'},now-3600000);C.recordReward(a,{qualified90d:133300,raw:'133.3K',precision:100,source:'official-page'},now);
+  C.recordReward(a,{qualified90d:129400,raw:'129.4K',precision:100,source:'official-page'},now-2*86400000);C.recordReward(a,{qualified90d:131900,raw:'131.9K',precision:100,source:'official-page'},now-86400000);C.recordReward(a,{qualified90d:132600,raw:'132.6K',precision:100,source:'official-page'},now-3600000);C.recordReward(a,{qualified90d:134600,raw:'134.6K',precision:100,source:'official-page'},now);
   C.recordStudio(a,{date:today,taskTimeZone:'UTC',posts:2,replies:12,postViews:12840,replyViews:3260,totalViews:16100},now);
   a.sync={running:false,complete:true,at:now,lastCompletedAt:now};
   const send=m=>frame.contentWindow.postMessage({source:'xian-parent-v1',...m},location.origin);let drag=null,collapsed=false;

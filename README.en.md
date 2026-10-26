@@ -5,7 +5,7 @@
   <h1>X Xiuxian · Creator Retreat</h1>
   <p>A movable cultivation-inspired dashboard for your daily writing and X creator stats.</p>
   <p>
-    <img src="https://img.shields.io/badge/version-0.1.10-173e34" alt="Version 0.1.10">
+    <img src="https://img.shields.io/badge/version-0.1.11-173e34" alt="Version 0.1.11">
     <img src="https://img.shields.io/badge/Chrome-116%2B-4285F4?logo=googlechrome&logoColor=white" alt="Chrome 116+">
     <img src="https://img.shields.io/badge/Manifest-V3-6d7772" alt="Manifest V3">
     <img src="https://img.shields.io/badge/Data-Local_storage-173e34" alt="Local data storage">
@@ -30,7 +30,7 @@ No API key and no build step. Read the X account signed in to your browser, set 
 | Writing reminder | Time since your last post, a configurable countdown and a persistent alert with write, snooze and acknowledge actions |
 | Impressions | Today's total studio Impressions, including verified and unverified viewers |
 | Followers | Total followers and net change since the day's first observation |
-| Ascension progress | A 500K progress bar for verified home-timeline impressions over the last 90 days, with daily net changes and individual readings |
+| Ascension progress | A 500K progress bar for verified home-timeline impressions over the last 90 days, displayed as 13.46W / 50W (W = 10,000), with yesterday’s net change on the home view and daily readings in history |
 | Background sync | Rewards → account analytics → follower profile, using an inactive temporary tab; manual sync is available in the footer |
 | History | Daily records, date filtering, reward and count adjustments, and JSON export |
 | Project GitHub | Open the X Xiuxian repository from the GitHub icon in the header |
@@ -55,7 +55,7 @@ The panoramic landscape preserves the full composition, with the avatar overlapp
 
 Install as an unpacked Chrome extension. It is not currently listed in the Chrome Web Store.
 
-1. Open [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest), download **`x-xiuxian-v0.1.10.zip`** and extract it.
+1. Open [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest), download **`x-xiuxian-v0.1.11.zip`** and extract it.
 2. Open `chrome://extensions` and turn on **Developer mode**.
 3. Click **Load unpacked** and select the extracted **X修仙** folder containing `manifest.json`.
 4. Sign in to [X](https://x.com) and refresh the page to display the floating panel.
@@ -121,6 +121,8 @@ System notifications depend on Chrome and operating-system settings. Closing the
 
 ### View history and daily changes
 
+The home view shows yesterday’s recorded reward change. Missing yesterday data appears as “—”; partial readings are explained in a tooltip.
+
 Open **日志** to filter dates, expand reward readings or count adjustments, and click **导出 JSON** to export the current account's records and settings.
 
 - **Publishing and impressions** follow the studio's **UTC dates**.
@@ -163,7 +165,7 @@ Core development requires Node.js 20+ and Python 3. The extension uses plain Jav
 npm test                # Data, publishing events and background flow tests
 npm run check           # Rebuild; verify scripts, manifest and assets
 npm run preview         # http://127.0.0.1:4178/demo.html
-npm run package         # release/x-xiuxian-v0.1.10.zip
+npm run package         # release/x-xiuxian-v0.1.11.zip
 ```
 
 All **40 regression tests pass**. Coverage includes account isolation, deduplication, successful and failed publishing, UTC boundaries, impression backfill, publishing reconciliation, lag protection, downward corrections, reward deltas, follower changes, background jobs and reminders. Tests use simulated responses; they do not establish live compatibility after every X update.

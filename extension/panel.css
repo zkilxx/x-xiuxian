@@ -21,6 +21,7 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden}
 .orb:focus-visible{outline:2px solid var(--jade);outline-offset:-3px}
 
 .brand .title-x{display:block;width:30px;height:30px;object-fit:contain;flex-shrink:0;pointer-events:none}
+.ascension-total{justify-content:space-between;align-items:center;gap:4px 10px;flex-wrap:wrap}.ascension-total>span{white-space:nowrap}.ascension-delta{color:var(--muted);font-size:10px}.ascension-delta b{font-weight:500;color:var(--jade);font-variant-numeric:tabular-nums}.ascension-delta b.negative{color:#dca083}.ascension-delta b.unknown{color:var(--muted)}
 
 /* Author link and quiet update status keep fixed dimensions in every state. */
 .tools{flex-shrink:0}.tools .author-github{width:28px;height:28px;display:grid;place-items:center;color:var(--gold);border-radius:5px;cursor:pointer}.author-github svg{display:block;width:17px;height:17px;fill:currentColor}.tools .author-github:hover{background:#e6c58712;text-decoration:none}.tools .author-github:focus-visible{outline:2px solid var(--jade)}
