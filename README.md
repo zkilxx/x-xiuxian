@@ -24,6 +24,10 @@
 
 ## 安装与使用
 
+推荐从 [Releases 下载 v0.1.8 安装包](https://github.com/zkilxx/x-xiuxian/releases/tag/v0.1.8)，解压后加载其中的 **`X修仙/`** 目录（内含 `manifest.json`）。这是开发者模式安装包，需要手动加载，不能直接点击 ZIP 安装。
+
+也可以从源码安装：
+
 1. 下载仓库或执行 `git clone https://github.com/zkilxx/x-xiuxian.git`。
 2. Chrome 打开 `chrome://extensions`，开启「开发者模式」。
 3. 点击「加载已解压的扩展程序」，选择本项目的 **`extension/`** 目录。
