@@ -1,12 +1,13 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');const vm=require('node:vm');const fs=require('node:fs');const C=require('../extension/core.js');
 function harness(){
- const local={},session={},alarms=new Map(),removed=[],listeners={},notifications=[],tabs=[];let id=70;
+ const local={},session={},alarms=new Map(),removed=[],listeners={},notifications=[],tabs=[],updateCalls=[];let id=70;
  const store=data=>({get:async key=>key==null?structuredClone(data):{[key]:structuredClone(data[key])},set:async value=>Object.assign(data,structuredClone(value))});
  const listener=name=>({addListener:fn=>listeners[name]=fn});
- const chrome={storage:{local:store(local),session:store(session)},runtime:{onMessage:listener('message'),onStartup:listener('startup'),onInstalled:listener('installed'),getURL:path=>'chrome-extension://test/'+path},tabs:{onRemoved:listener('remove'),create:async spec=>{const t={id:++id,...spec};tabs.push(t);return t;},update:async(n,spec)=>{const t=tabs.find(t=>t.id===n);if(t)Object.assign(t,spec);return t;},remove:async n=>removed.push(n),sendMessage:async()=>{}},action:{onClicked:listener('action')},alarms:{get:async n=>alarms.get(n),clear:async n=>alarms.delete(n),create:async(n,s)=>alarms.set(n,s),onAlarm:listener('alarm')},notifications:{clear:async()=>{},create:async(...args)=>notifications.push(args),onButtonClicked:listener('notification')}};
- const context=vm.createContext({chrome,URL,console,Date,Math,Map,Promise,fetch:async()=>({json:async()=>({format:'x-account-overview',publishing:true,version:2})}),XianCore:C,importScripts:()=>{}});vm.runInContext(fs.readFileSync(require.resolve('../extension/background.js'),'utf8'),context);
+ const chrome={storage:{local:store(local),session:store(session)},runtime:{id:'test',onMessage:listener('message'),onStartup:listener('startup'),onInstalled:listener('installed'),getURL:path=>'chrome-extension://test/'+path},tabs:{onRemoved:listener('remove'),create:async spec=>{const t={id:++id,...spec};tabs.push(t);return t;},update:async(n,spec)=>{const t=tabs.find(t=>t.id===n);if(t)Object.assign(t,spec);return t;},remove:async n=>removed.push(n),sendMessage:async()=>{}},action:{onClicked:listener('action')},alarms:{get:async n=>alarms.get(n),clear:async n=>alarms.delete(n),create:async(n,s)=>alarms.set(n,s),onAlarm:listener('alarm')},notifications:{clear:async()=>{},create:async(...args)=>notifications.push(args),onButtonClicked:listener('notification')}};
+ const context=vm.createContext({chrome,URL,console,Date,Math,Map,Promise,fetch:async()=>({json:async()=>({format:'x-account-overview',publishing:true,version:2})}),XianCore:C,XianUpdates:{checkForUpdates:async force=>{updateCalls.push(force);return{status:'current'};}},importScripts:()=>{}});vm.runInContext(fs.readFileSync(require.resolve('../extension/background.js'),'utf8'),context);
  const msg=(message,tab=1,url='https://x.com/home')=>new Promise(resolve=>listeners.message(message,{tab:{id:tab,url}},resolve));
- return {msg,local,session,alarms,removed,tabs,listeners,notifications};
+ const updateMsg=(message,sender)=>new Promise(resolve=>listeners.message(message,sender,resolve));
+ return {msg,local,session,alarms,removed,tabs,listeners,notifications,updateMsg,updateCalls};
 }
 test('worker serializes cross-tab updates and isolates account storage',async()=>{
  const h=harness();assert.equal((await h.msg({type:'identify',profile:{handle:'tester'}},1,'https://example.com')).ok,false);
@@ -50,4 +51,11 @@ test('timed-out stages do not claim that all background data synced',async()=>{
 test('manual sync starts a fresh round immediately without creating duplicate running jobs',async()=>{
  const h=harness();await h.msg({type:'identify',profile:{handle:'tester'}});await h.msg({type:'scanStudio',handle:'tester',manual:true});const id=h.tabs[0].id;await h.msg({type:'scanStudio',handle:'tester',manual:true});assert.equal(h.tabs.length,1);
  for(let i=0;i<3;i++)await h.listeners.alarm({name:'scan-timeout:'+id});await h.msg({type:'scanStudio',handle:'tester'});assert.equal(h.tabs.length,1);await h.msg({type:'scanStudio',handle:'tester',manual:true});assert.equal(h.tabs.length,2);assert.equal(h.tabs[1].active,false);
+});
+
+test('update checks accept only the extension panel and do not require an X account',async()=>{
+ const h=harness();
+ for(const sender of [{id:'test',url:'https://x.com/home',tab:{id:1,url:'https://x.com/home'}},{id:'other',url:'chrome-extension://test/panel.html'},{id:'test',url:'chrome-extension://test/diagnostics.html'}])assert.equal((await h.updateMsg({type:'checkUpdates',force:true},sender)).ok,false);
+ assert.equal(h.updateCalls.length,0);
+ const result=await h.updateMsg({type:'checkUpdates',force:true},{id:'test',url:'chrome-extension://test/panel.html#channel'});assert.equal(result.ok,true);assert.equal(result.data.status,'current');assert.deepEqual(h.updateCalls,[true]);
 });

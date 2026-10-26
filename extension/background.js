@@ -1,6 +1,6 @@
 'use strict';
-importScripts('core.js');
-chrome.storage.local.set({runtimeBuild:'20261026-layout-polish-v7'});
+importScripts('core.js','updates.js');
+chrome.storage.local.set({runtimeBuild:'20261026-github-updates-v9'});
 const C = XianCore, sessions = new Map();
 let queue = Promise.resolve();
 const serial = fn => { const task = queue.then(fn); queue = task.catch(()=>{}); return task; };
@@ -98,6 +98,10 @@ async function process(message,sender) {
   return C.snapshot(a);
 }
 chrome.runtime.onMessage.addListener((message,sender,sendResponse) => {
+  if(message?.type==='checkUpdates'){
+    if(sender.id!==chrome.runtime.id||sender.url?.split('#')[0]!==chrome.runtime.getURL('panel.html')){sendResponse({ok:false,error:'更新检测仅限插件面板。'});return false;}
+    XianUpdates.checkForUpdates(message.force===true).then(data=>sendResponse({ok:true,data})).catch(()=>sendResponse({ok:false,error:'暂时无法检查更新。'}));return true;
+  }
   serial(()=>process(message,sender)).then(data=>sendResponse({ok:true,data})).catch(error=>sendResponse({ok:false,error:error.message})); return true;
 });
 chrome.tabs.onRemoved.addListener(id=>serial(async()=>{sessions.delete(id);await chrome.storage.session.set({['identity:'+id]:null});const sync=(await chrome.storage.session.get('rewardSync')).rewardSync,job=sync?.jobs[id];if(job){delete sync.jobs[id];await chrome.storage.session.set({rewardSync:sync});const a=await read(job.handle);if(a){a.sync={...a.sync,running:false,complete:false,at:Date.now()};await save(a);}}}));

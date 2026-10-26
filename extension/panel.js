@@ -8,6 +8,24 @@
   let fitFrame=0,lastFitHeight=0;
   function fitPanel(){cancelAnimationFrame(fitFrame);fitFrame=requestAnimationFrame(()=>{const shell=$('shell'),main=$('scroll'),view=$(tab);if(!shell||!main||!view||shell.hidden)return;const style=getComputedStyle(main);const content=view.getBoundingClientRect().height+parseFloat(style.paddingTop)+parseFloat(style.paddingBottom);const fixed=shell.getBoundingClientRect().height-main.getBoundingClientRect().height;const height=Math.ceil(content+fixed);if(Math.abs(height-lastFitHeight)>1){lastFitHeight=height;tell({type:'resize',height});}});}
   const text=(id,value)=>{const el=$(id);if(el)el.textContent=value;};
+  let checkingUpdate=false,updateRequested=false;
+  const installedVersion=globalThis.chrome?.runtime?.getManifest?.().version||'0.1.9';
+  text('installed-version','v'+installedVersion);
+  async function checkUpdates(force=false){
+    if(checkingUpdate)return;
+    if(!globalThis.chrome?.runtime?.id){text('update-status','安装插件后检测');$('update-check').disabled=true;return;}
+    checkingUpdate=true;updateRequested=true;$('update-check').disabled=true;text('update-status','正在检查…');
+    try{
+      const response=await chrome.runtime.sendMessage({type:'checkUpdates',force});if(!response?.ok)throw new Error();
+      const r=response.data,available=r.status==='available';
+      text('installed-version','v'+r.currentVersion);$('update-download').hidden=!available;
+      if(available){$('update-download').href=r.downloadURL||r.releaseURL;text('update-download','v'+r.latestVersion+' ↗');$('update-download').title='下载新版，解压后替换原插件文件并重新加载';}
+      text('update-status',r.failed?(available?'上次发现新版':'检查失败，可重试'):available?'发现新版':r.status==='current'?'已是最新版本':'检查失败，可重试');
+      $('update-bar').classList.toggle('has-update',available);
+      $('update-check').title=r.checkedAt?'上次成功检查：'+new Date(r.checkedAt).toLocaleString('zh-CN'):'检查 GitHub 最新正式版本';
+    }catch{text('update-status','检查失败，可重试');}
+    finally{checkingUpdate=false;$('update-check').disabled=false;}
+  }
   const setProgress=(id,value,max)=>{const p=$(id);p.max=max;p.value=Math.min(value||0,max);};
   function render(data){
     state=data;$('locked').hidden=true;
@@ -62,11 +80,12 @@
     if((e.source!==null&&e.source!==parent)||e.data?.source!=='xian-parent-v1'||(channel?e.data.channel!==channel:false)||!(/^https:\/\/(x|twitter)\.com$/.test(e.origin)||/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(e.origin)||(channel&&(e.origin==='null'||e.origin===location.origin))))return;
     parentOrigin=e.origin==='null'?null:e.origin;const m=e.data;
     if(m.type==='state')render(m.data);
-    else if(m.type==='collapsed'){const wasHidden=$('shell').hidden;$('shell').hidden=m.value;$('orb').hidden=!m.value;if(wasHidden&&!m.value){lastFitHeight=0;fitPanel();}}
+    else if(m.type==='collapsed'){const wasHidden=$('shell').hidden;$('shell').hidden=m.value;$('orb').hidden=!m.value;if(wasHidden&&!m.value){lastFitHeight=0;fitPanel();checkUpdates();}else if(!m.value&&!updateRequested)checkUpdates();}
     else if(m.type==='locked'){state=null;text('name','静候道友');text('handle','等待 X 登录账号');$('locked').hidden=false;$('avatar').hidden=true;$('avatar').removeAttribute('src');$('avatar-fallback').hidden=false;for(const id of ['total-views','followers','follower-delta'])text(id,'—');text('posts','—');text('replies','—');setProgress('posts-progress',0,3);setProgress('replies-progress',0,20);text('daily-qualified','待读取');text('qualified90','— / 50W 曝光');text('reward-percent','待读取');$('status-dot').classList.remove('active');text('verified-followers','— / 500');setProgress('reward-progress',0,500000);text('synced','等待账号确认');$('history-list').replaceChildren();select('home');for(const id of ['sync','reward-edit','snooze','scan-reward'])if($(id))$(id).disabled=true;timer();}
     else if(m.type==='error')notice(m.error,true);else if(m.type==='notice')notice(m.text);
   });
   document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>select(b.dataset.tab)));
+  $('update-check').onclick=()=>checkUpdates(true);
   $('settings-tab').onclick=()=>select('settings');$('minimize').onclick=()=>tell({type:'toggle'});$('sync').onclick=()=>tell({type:'sync'});
   if($('scan-reward'))$('scan-reward').onclick=()=>tell({type:'scanReward'});
   if($('reward-edit'))$('reward-edit').onclick=()=>{select('reward');const r=state?.reward;for(const k of ['qualified90d','verifiedFollowers'])$('reward-form').elements.namedItem(k).value=r?.date===state?.today.date?r?.[k]??'':'';};
@@ -77,8 +96,10 @@
   $('reminder-write').onclick=()=>{if(state)state.reminder={...state.reminder,acknowledgedPost:state.lastPost};tell({type:'dismissReminder'});reminderVisible(false,null,0);};
   $('settings-form').onsubmit=e=>{e.preventDefault();if(!state)return notice('请先登录 X 并确认账号。',true);const f=new FormData(e.currentTarget),value={...state.settings};for(const k of ['posts','replies','reminderMinutes','dailyQualifiedGoal'])if(f.has(k))value[k]=Number(f.get(k));value.reminderEnabled=e.currentTarget.elements.reminderEnabled.checked;value.autoReward=e.currentTarget.elements.autoReward.checked;tell({type:'settings',value});};
   $('reward-form').onsubmit=e=>{e.preventDefault();if(!state)return;const f=new FormData(e.currentTarget);const value=Object.fromEntries(['qualified90d','verifiedFollowers'].map(k=>[k,f.get(k)===''?null:Number(f.get(k))]));tell({type:'reward',value});select('home');};
-  $('export').onclick=()=>{if(!state)return;const blob=new Blob([JSON.stringify({app:'X 修仙',version:'0.1.8',exportedAt:new Date().toISOString(),...state},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`X修仙-${state.profile.handle}-${state.today.date}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);};
-  function draggable(element,isOrb=false){let start=null,moved=false;element.addEventListener('pointerdown',e=>{if(e.target.closest('button')&&!isOrb)return;if(e.button!==0)return;start={x:e.screenX,y:e.screenY};moved=false;element.setPointerCapture(e.pointerId);tell({type:'drag-start',screenX:e.screenX,screenY:e.screenY});});element.addEventListener('pointermove',e=>{if(!start)return;if(Math.abs(e.screenX-start.x)+Math.abs(e.screenY-start.y)>4)moved=true;tell({type:'drag-move',screenX:e.screenX,screenY:e.screenY});});const end=()=>{if(!start)return;start=null;tell({type:'drag-end'});};element.addEventListener('pointerup',()=>{end();if(isOrb&&!moved)tell({type:'toggle'});});element.addEventListener('pointercancel',end);element.addEventListener('lostpointercapture',end);element.addEventListener('keydown',e=>{const d={ArrowLeft:[-10,0],ArrowRight:[10,0],ArrowUp:[0,-10],ArrowDown:[0,10]}[e.key];if(d){e.preventDefault();tell({type:'move-key',dx:d[0],dy:d[1]});}else if(isOrb&&(e.key==='Enter'||e.key===' ')){e.preventDefault();tell({type:'toggle'});}});}
+  $('export').onclick=()=>{if(!state)return;const blob=new Blob([JSON.stringify({app:'X 修仙',version:'0.1.9',exportedAt:new Date().toISOString(),...state},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`X修仙-${state.profile.handle}-${state.today.date}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);};
+  function draggable(element,isOrb=false){let start=null,moved=false;element.addEventListener('pointerdown',e=>{if(e.target.closest('button,a')&&!isOrb)return;if(e.button!==0)return;start={x:e.screenX,y:e.screenY};moved=false;element.setPointerCapture(e.pointerId);tell({type:'drag-start',screenX:e.screenX,screenY:e.screenY});});element.addEventListener('pointermove',e=>{if(!start)return;if(Math.abs(e.screenX-start.x)+Math.abs(e.screenY-start.y)>4)moved=true;tell({type:'drag-move',screenX:e.screenX,screenY:e.screenY});});const end=()=>{if(!start)return;start=null;tell({type:'drag-end'});};element.addEventListener('pointerup',()=>{end();if(isOrb&&!moved)tell({type:'toggle'});});element.addEventListener('pointercancel',end);element.addEventListener('lostpointercapture',end);element.addEventListener('keydown',e=>{const d={ArrowLeft:[-10,0],ArrowRight:[10,0],ArrowUp:[0,-10],ArrowDown:[0,10]}[e.key];if(d){e.preventDefault();tell({type:'move-key',dx:d[0],dy:d[1]});}else if(isOrb&&(e.key==='Enter'||e.key===' ')){e.preventDefault();tell({type:'toggle'});}});}
   draggable($('drag'));draggable($('orb'),true);$('avatar').onerror=()=>{$('avatar').hidden=true;$('avatar-fallback').hidden=false;};
-  setInterval(timer,1000);addEventListener('resize',fitPanel);document.addEventListener('toggle',fitPanel,true);document.fonts?.ready.then(fitPanel);tell({type:'ready'});fitPanel();
+  setInterval(timer,1000);setInterval(()=>{if(!document.hidden&&!$('shell').hidden)checkUpdates();},60*60*1000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('shell').hidden)checkUpdates();});
+  addEventListener('resize',fitPanel);document.addEventListener('toggle',fitPanel,true);document.fonts?.ready.then(fitPanel);tell({type:'ready'});fitPanel();
 })();
