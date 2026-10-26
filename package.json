@@ -7,6 +7,10 @@
     "check": "npm run build && node scripts/check.cjs",
     "preview": "python3 -m http.server 4178 --bind 127.0.0.1 --directory extension",
     "package": "npm run build && python3 scripts/package.py",
-    "build": "node scripts/build.cjs"
+    "build": "node scripts/build.cjs",
+    "docs:screenshots": "node scripts/capture-docs.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
   }
 }
