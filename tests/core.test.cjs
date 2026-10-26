@@ -1,0 +1,56 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const C=require('../extension/core.js');
+const at=Date.parse('2026-10-26T04:00:00Z'),p={handle:'tester',name:'道友',id:'42',followers:100};
+const make=(id,reply=false,views=10,time=at)=>({id:String(id),author:'tester',authorId:'42',at:time,reply,views});
+test('timezone boundary and safe configuration',()=>{assert.equal(C.day(Date.parse('2026-10-25T16:00:00Z')),'2026-10-26');assert.equal(C.day(Date.parse('2026-10-25T15:59:59Z')),'2026-10-25');assert.equal(C.settings({timeZone:'invalid'}).timeZone,'Asia/Shanghai');assert.equal(C.settings({posts:-10}).posts,3);assert.equal(C.handle('../bad'),'');});
+test('deduplicates network replays; rejects other accounts and counts replies separately',()=>{const a=C.blank(p);C.ingest(a,{tweets:[make(1),make(1),make(2,true),{...make(3),author:'other'},{...make(4),authorId:'999'}]},at);const s=C.snapshot(a,at);assert.equal(s.today.posts,1);assert.equal(s.today.replies,1);assert.equal(s.today.postViews,10);assert.equal(s.lastPost,at);});
+test('missing views stay unknown and later counts may be corrected downward',()=>{const a=C.blank(p);C.ingest(a,{tweets:[make(1,false,null)]},at);assert.equal(C.snapshot(a,at).today.postViews,null);C.ingest(a,{tweets:[make(1,false,20)]},at+100);C.ingest(a,{tweets:[make(1,false,18)]},at+200);assert.equal(C.snapshot(a,at).today.postViews,18);});
+test('followers use first observation of each day; snapshots cannot leak yesterday delta',()=>{const a=C.blank(p);C.ingest(a,{users:[p]},at);C.ingest(a,{users:[{...p,followers:107}]},at+100);assert.equal(C.snapshot(a,at).today.followerDelta,7);assert.equal(C.snapshot(a,at+86400000).today.followerDelta,null);C.ingest(a,{users:[{...p,followers:109}]},at+86400000);assert.equal(C.snapshot(a,at+86400000).today.followerDelta,0);assert.equal(a.days['2026-10-26'].followerDelta,7);});
+test('late historical tweets are filed by post date; records survive reload',()=>{const a=C.blank(p);C.ingest(a,{tweets:[make(1,false,100,at-86400000),make(2,true,20)]},at);const b=JSON.parse(JSON.stringify(a));assert.equal(C.snapshot(b,at).today.posts,0);assert.equal(b.days['2026-10-25'].posts,1);assert.equal(C.snapshot(b,at).today.replies,1);});
+test('GraphQL extraction excludes repost wrapper and never stores post text',()=>{const raw={__typename:'Tweet',rest_id:'12',legacy:{created_at:new Date(at).toUTCString(),full_text:'private test body',in_reply_to_status_id_str:'7'},core:{user_results:{result:{__typename:'User',rest_id:'42',legacy:{screen_name:'tester',name:'道友',followers_count:100}}}},views:{count:'123'}};const v=C.extract({data:{result:raw}});assert.equal(v.tweets.length,1);assert.equal(v.tweets[0].reply,true);assert.equal(v.tweets[0].views,123);assert.equal(JSON.stringify(v).includes('private test body'),false);assert.equal(C.tweet({...raw,legacy:{...raw.legacy,retweeted_status_result:{result:raw}}}),null);});
+test('rounded official display retains precision',()=>{assert.deepEqual(C.displayNumber('133.3K'),{value:133300,precision:100,raw:'133.3K'});assert.equal(C.displayNumber('13.33万').value,133300);assert.equal(C.displayNumber('50 万次曝光'),null);assert.equal(C.displayNumber('133,321').precision,1);});
+test('reward daily gain uses previous day final reading; repeated updates are not added twice',()=>{const a=C.blank(p);C.recordReward(a,{qualified90d:100000,source:'official-page',precision:1},at-86400000);C.recordReward(a,{qualified90d:103000,source:'official-page'},at-86400000+1000);C.recordReward(a,{qualified90d:105000,source:'official-page'},at);C.recordReward(a,{qualified90d:107000,source:'official-page'},at+1000);C.recordReward(a,{qualified90d:107000,source:'official-page'},at+2000);const t=C.snapshot(a,at).today.rewardTrack;assert.equal(t.delta,4000);assert.equal(t.baseline,103000);assert.equal(t.samples.length,2);assert.equal(t.partial,false);assert.equal(a.days['2026-10-25'].rewardTrack.delta,3000);});
+test('reward negative rolling change is preserved; day gaps do not fabricate daily gains',()=>{const a=C.blank(p);C.recordReward(a,{qualified90d:133300,precision:100,raw:'133.3K'},at);C.recordReward(a,{qualified90d:133100,precision:100},at+1000);assert.equal(C.snapshot(a,at).today.rewardTrack.delta,-200);assert.equal(C.snapshot(a,at).today.rewardTrack.approximate,true);C.recordReward(a,{qualified90d:140000},at+3*86400000);assert.equal(C.snapshot(a,at+3*86400000).today.rewardTrack.partial,true);assert.equal(C.snapshot(a,at+3*86400000).today.rewardTrack.delta,0);assert.equal(a.days['2026-10-27'],undefined);});
+test('midnight snapshot has no stale daily progress but preserves last official total',()=>{const a=C.blank(p);C.recordReward(a,{qualified90d:133300},at);const s=C.snapshot(a,at+86400000);assert.equal(s.today.rewardTrack,undefined);assert.equal(s.reward.qualified90d,133300);});
+test('studio daily split requires explicit dated metric fields; aggregate impressions never become main-post exposure',()=>{const rows=C.analytics({data:{daily:[{date:'2026-10-26',post_impressions:12000,reply_impressions:3000,impressions:15000}]}});assert.equal(rows[0].postViews,12000);assert.equal(rows[0].replyViews,3000);const total=C.analytics({date:'2026-10-26',impressions:15000});assert.equal(total[0].postViews,undefined);assert.equal(C.analytics({impressions:15000}).length,0);});
+test('studio metrics do not overwrite locally recorded posting counts',()=>{const a=C.blank(p);C.ingest(a,{tweets:[make(1)]},at);C.recordStudio(a,{date:'2026-10-26',postViews:5000,replyViews:1000},at);const s=C.snapshot(a,at);assert.equal(s.today.posts,1);assert.equal(s.today.replies,0);assert.equal(s.today.studio.postViews,5000);});
+test('background task reconciliation replaces totals rather than adding twice; protects fresh local posts',()=>{const a=C.blank(p,at-1000);C.recordStudio(a,{date:'2026-10-26',posts:10,replies:30},at);C.ingest(a,{tweets:[make(1)]},at+100);assert.equal(C.snapshot(a,at).today.posts,11);C.recordStudio(a,{date:'2026-10-26',posts:10,replies:30},at+1000);assert.equal(C.snapshot(a,at).today.posts,11);assert.equal(C.snapshot(a,at).today.taskSync.posts.held,true);C.recordStudio(a,{date:'2026-10-26',posts:11,replies:30},at+2000);assert.equal(C.snapshot(a,at).today.posts,11);C.recordStudio(a,{date:'2026-10-26',posts:11,replies:31},at+3000);assert.equal(C.snapshot(a,at).today.posts,11);assert.equal(C.snapshot(a,at).today.replies,31);assert.equal(a.days['2026-10-26'].taskCorrections.at(-1).after,31);});
+test('official downward correction applies when no recent local events remain',()=>{const a=C.blank(p,at-1000);C.recordStudio(a,{date:'2026-10-26',posts:10},at);C.recordStudio(a,{date:'2026-10-26',posts:8},at+1000);assert.equal(C.snapshot(a,at).today.posts,8);assert.equal(a.days['2026-10-26'].taskCorrections.at(-1).before,10);});
+test('reading follower or exposure data cannot pretend the publishing tasks were reconciled',()=>{const a=C.blank(p,at);C.recordStudio(a,{date:'2026-10-26',verifiedFollowers:500,postViews:3000},at);assert.equal(C.snapshot(a,at).today.taskSync,undefined);});
+
+test('official Displayed totals sum verified and unverified views and use recent hourly backfill',()=>{
+ const stamp=Date.parse('2026-10-20T00:00:00Z');
+ const point=(timestamp,count,verified,kind='Displayed')=>({timestamp,count,is_engaging_user_verified:verified,engagement_type:kind});
+ const raw={current_time_series:[point(stamp,15340,'false'),point(stamp,17789,'true'),point(stamp,17789,'true'),point(stamp,1049,'true','Reply')],hourly_backfill:[point(stamp,1,'true'),point(Date.parse('2026-10-26T00:00:00Z'),17,'true'),point(Date.parse('2026-10-26T01:00:00Z'),23,'false'),point(Date.parse('2026-10-26T23:00:00Z'),5,'false')]};
+ const rows=C.parseStudioSchema(raw,{format:'x-account-overview'});
+ assert.deepEqual(rows,[{date:'2026-10-20',totalViews:33129},{date:'2026-10-26',totalViews:45}]);
+ assert.equal(rows[0].postViews,undefined);assert.equal(rows[0].replyViews,undefined);assert.equal(rows[0].replies,undefined);
+ const a=C.blank({handle:'tester'},Date.parse('2026-10-26T02:00:00Z'));for(const row of rows)C.recordStudio(a,row,Date.parse('2026-10-26T02:00:00Z'));
+ assert.equal(C.snapshot(a,Date.parse('2026-10-26T02:00:00Z')).today.studio.totalViews,45);
+ assert.equal(a.days['2026-10-26'].taskSync,undefined);
+});
+test('missing official exposure stays unknown; repeated reads replace totals and allow correction',()=>{
+ assert.deepEqual(C.overviewImpressions({hourly_backfill:[{timestamp:Date.now(),engagement_type:'Reply',count:8}]}),[]);
+ const a=C.blank({handle:'tester'}),date=C.day();for(const totalViews of [100,120,115])C.recordStudio(a,{date,totalViews});
+ assert.equal(C.snapshot(a).today.studio.totalViews,115);
+});
+
+test('studio creation metrics reconcile own posts and replies alongside exposure; received replies are excluded',()=>{
+ const stamp=Date.parse('2026-10-26T00:00:00Z');const item=(engagement_type,count,extra={})=>({timestamp:stamp,engagement_type,count,...extra});
+ const raw={current_time_series:[],hourly_backfill:[item('Displayed',5911),item('TweetCreate',5),item('QuoteCreate',2),item('ReplyCreate',77),item('Reply',420),item('Retweet',15)]};
+ const rows=C.parseStudioSchema(raw,{format:'x-account-overview',publishing:true});assert.deepEqual(rows,[{date:'2026-10-26',totalViews:5911,posts:7,replies:77,taskTimeZone:'UTC'}]);
+ const a=C.blank(p,at-1000);C.recordStudio(a,rows[0],at);let s=C.snapshot(a,at);assert.equal(s.today.posts,7);assert.equal(s.today.replies,77);assert.equal(s.today.studio.totalViews,5911);
+ C.recordStudio(a,rows[0],at+100);assert.equal(C.snapshot(a,at).today.replies,77);
+ C.ingest(a,{tweets:[make(9,true)]},at+200);assert.equal(C.snapshot(a,at).today.replies,78);
+ C.recordStudio(a,rows[0],at+500);assert.equal(C.snapshot(a,at).today.replies,78);assert.equal(a.days['2026-10-26'].taskSync.replies.held,true);
+ C.recordStudio(a,{...rows[0],replies:78},at+1000);s=C.snapshot(a,at);assert.equal(s.today.replies,78);assert.equal(s.today.taskSync.replies.held,false);
+});
+test('publishing follows the studio UTC boundary while local follower and reward history remains intact',()=>{
+ const a=C.blank(p,at-1000);C.recordStudio(a,{date:'2026-10-26',posts:5,replies:77,totalViews:5911,taskTimeZone:'UTC'},at);
+ const afterLocalMidnight=Date.parse('2026-10-26T16:30:00Z');C.ingest(a,{tweets:[make(33,false,1,afterLocalMidnight)],users:[{...p,followers:103}]},afterLocalMidnight);
+ const s=C.snapshot(a,afterLocalMidnight);assert.equal(s.today.date,'2026-10-27');assert.equal(s.taskDate,'2026-10-26');assert.equal(s.today.posts,6);assert.equal(s.today.replies,77);assert.equal(s.studioToday.totalViews,5911);assert.equal(s.today.followerDelta,0);
+ const next=C.snapshot(a,Date.parse('2026-10-27T00:00:01Z'));assert.equal(next.taskDate,'2026-10-27');assert.equal(next.today.posts,0);assert.equal(next.today.replies,0);assert.equal(next.studioToday,null);
+});
+test('complete studio daily series fills omitted creation kinds with zero; empty responses do not overwrite counts',()=>{
+ const rows=C.overviewMetrics({hourly_backfill:[{timestamp:Date.parse('2026-10-26T00:00:00Z'),engagement_type:'Displayed',count:100}]},true);assert.equal(rows[0].posts,0);assert.equal(rows[0].replies,0);
+ assert.deepEqual(C.overviewMetrics({current_time_series:[],hourly_backfill:[]},true),[]);
+});

@@ -1,0 +1,12 @@
+{
+  "name": "x-xiuxian",
+  "version": "0.1.8",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "check": "npm run build && node scripts/check.cjs",
+    "preview": "python3 -m http.server 4178 --bind 127.0.0.1 --directory extension",
+    "package": "npm run build && python3 scripts/package.py",
+    "build": "node scripts/build.cjs"
+  }
+}

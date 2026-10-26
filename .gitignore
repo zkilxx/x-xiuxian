@@ -1,0 +1,25 @@
+.DS_Store
+node_modules/
+/.env
+/.env.*
+!/.env.example
+/release/
+/exports/
+/outputs/
+*.log
+__pycache__/
+*.pyc
+
+# Keep account-specific verification records on this computer.
+/docs/曝光总数验证-*.md
+/docs/浏览器调试期间面板空白-*.png
+
+# Track the selected design masters; retain earlier studies locally.
+/design/*
+!/design/README.md
+!/design/logo-jade-blades-v7.png
+!/design/logo-jade-blades-v7-prompt.md
+!/design/title-x-cutout-v8.png
+!/design/title-x-cutout-v8-prompt.md
+!/design/banner-restored-v2.png
+!/design/banner-restored-prompt.md
