@@ -5,7 +5,7 @@
   <h1>X Xiuxian · Creator Retreat</h1>
   <p>A movable cultivation-inspired dashboard for your daily writing and X creator stats.</p>
   <p>
-    <img src="https://img.shields.io/badge/version-0.1.9-173e34" alt="Version 0.1.9">
+    <img src="https://img.shields.io/badge/version-0.1.10-173e34" alt="Version 0.1.10">
     <img src="https://img.shields.io/badge/Chrome-116%2B-4285F4?logo=googlechrome&logoColor=white" alt="Chrome 116+">
     <img src="https://img.shields.io/badge/Manifest-V3-6d7772" alt="Manifest V3">
     <img src="https://img.shields.io/badge/Data-Local_storage-173e34" alt="Local data storage">
@@ -33,7 +33,7 @@ No API key and no build step. Read the X account signed in to your browser, set 
 | Ascension progress | A 500K progress bar for verified home-timeline impressions over the last 90 days, with daily net changes and individual readings |
 | Background sync | Rewards → account analytics → follower profile, using an inactive temporary tab; manual sync is available in the footer |
 | History | Daily records, date filtering, reward and count adjustments, and JSON export |
-| Author GitHub | Open the author profile from the GitHub icon in the header |
+| Project GitHub | Open the X Xiuxian repository from the GitHub icon in the header |
 | Update checks | Check the latest stable GitHub Release when opening the panel, with a six-hour cache and a manual check button |
 | Local storage | No custom backend, telemetry, separate sign-in or API key |
 
@@ -55,7 +55,7 @@ The panoramic landscape preserves the full composition, with the avatar overlapp
 
 Install as an unpacked Chrome extension. It is not currently listed in the Chrome Web Store.
 
-1. Open [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest), download **`x-xiuxian-v0.1.9.zip`** and extract it.
+1. Open [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest), download **`x-xiuxian-v0.1.10.zip`** and extract it.
 2. Open `chrome://extensions` and turn on **Developer mode**.
 3. Click **Load unpacked** and select the extracted **X修仙** folder containing `manifest.json`.
 4. Sign in to [X](https://x.com) and refresh the page to display the floating panel.
@@ -82,13 +82,13 @@ Each Release includes `SHA256SUMS.txt` for package verification.
 
 ## Usage
 
-### Author and updates
+### Project and updates
 
-The GitHub icon in the header opens the author profile, [@zkilxx](https://github.com/zkilxx). The footer displays your installed version and update status. Opening or expanding the panel checks the latest stable GitHub Release, with a six-hour cache. An open panel revisits the cache hourly and when visible again; click **检查更新** to force a fresh check.
+The GitHub icon in the header opens the [X Xiuxian repository](https://github.com/zkilxx/x-xiuxian). The footer displays your installed version and update status. Opening or expanding the panel checks the latest stable GitHub Release, with a six-hour cache. An open panel revisits the cache hourly and when visible again; click **检查更新** to force a fresh check.
 
 When an update is available, a version link downloads its ZIP. Replace files in the existing folder and reload as described above. Failed checks retain the last known release and show a retry message instead of claiming you are up to date; automatic retries use a 15-minute backoff. The status row keeps a fixed height.
 
-Only public Release metadata is requested. No account, goal or history data is sent, and no download or installation starts automatically. Install 0.1.9 manually once to enable checks for future versions.
+Only public Release metadata is requested. No account, goal or history data is sent, and no download or installation starts automatically. Update checks are available from 0.1.9; earlier versions need a manual upgrade first.
 
 ### Set daily goals
 
@@ -163,7 +163,7 @@ Core development requires Node.js 20+ and Python 3. The extension uses plain Jav
 npm test                # Data, publishing events and background flow tests
 npm run check           # Rebuild; verify scripts, manifest and assets
 npm run preview         # http://127.0.0.1:4178/demo.html
-npm run package         # release/x-xiuxian-v0.1.9.zip
+npm run package         # release/x-xiuxian-v0.1.10.zip
 ```
 
 All **40 regression tests pass**. Coverage includes account isolation, deduplication, successful and failed publishing, UTC boundaries, impression backfill, publishing reconciliation, lag protection, downward corrections, reward deltas, follower changes, background jobs and reminders. Tests use simulated responses; they do not establish live compatibility after every X update.
@@ -177,7 +177,7 @@ npm run docs:screenshots
 npm run test:ui          # Real extension, isolated profile, mocked X / GitHub responses
 ```
 
-Playwright is a development dependency for screenshots and UI checks, not an extension runtime dependency. The real-extension flow covers the author link, automatic and manual checks, available updates, offline errors, caching, collapse/expand and a compact viewport. The screenshot script does not read your existing Chrome profile or automatically delete local files.
+Playwright is a development dependency for screenshots and UI checks, not an extension runtime dependency. The real-extension flow covers the repository link, automatic and manual checks, available updates, offline errors, caching, collapse/expand and a compact viewport. The screenshot script does not read your existing Chrome profile or automatically delete local files.
 
 ```text
 extension/                    Loadable Chrome extension

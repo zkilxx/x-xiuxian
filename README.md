@@ -5,7 +5,7 @@
   <h1>X 修仙 · 创作者洞府</h1>
   <p>在 X 页面里，把每日创作、交流与数据增长，收进一座修仙洞府。</p>
   <p>
-    <img src="https://img.shields.io/badge/version-0.1.9-173e34" alt="Version 0.1.9">
+    <img src="https://img.shields.io/badge/version-0.1.10-173e34" alt="Version 0.1.10">
     <img src="https://img.shields.io/badge/Chrome-116%2B-4285F4?logo=googlechrome&logoColor=white" alt="Chrome 116+">
     <img src="https://img.shields.io/badge/Manifest-V3-6d7772" alt="Manifest V3">
     <img src="https://img.shields.io/badge/数据-本机保存-173e34" alt="数据本机保存">
@@ -33,7 +33,7 @@
 | 飞升进度 | 近 90 天认证用户主页曝光的 50W 总进度条，记录每日净增及每次数值变动 |
 | 后台同步 | 奖励 → 工作室分析 → 粉丝资料依次静默读取；不切换当前标签，底部可手动提前同步 |
 | 修行日志 | 查看每天的任务、曝光、粉丝与奖励记录，支持日期筛选、变动明细及 JSON 导出 |
-| 作者 GitHub | 右上角 GitHub 按钮直达作者主页 |
+| 项目 GitHub | 右上角 GitHub 按钮直达 X 修仙项目仓库 |
 | 更新检测 | 打开面板自动检查 GitHub 最新正式 Release，缓存 6 小时；底部可手动检查，新版提供下载入口 |
 | 本机保存 | 无自建后端，无埋点，不需要额外登录或填写 API Key |
 
@@ -55,7 +55,7 @@
 
 目前通过 Chrome 的「加载已解压的扩展程序」安装，尚未上架 Chrome 应用商店。
 
-1. 前往 [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest)，下载 **`x-xiuxian-v0.1.9.zip`** 并解压。
+1. 前往 [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest)，下载 **`x-xiuxian-v0.1.10.zip`** 并解压。
 2. 在 Chrome 地址栏输入 `chrome://extensions`，开启右上角「开发者模式」。
 3. 点击「加载已解压的扩展程序」，选择解压后的 **X修仙** 文件夹，里面应有 `manifest.json`。
 4. 打开并登录 [X](https://x.com)，刷新页面，即可看到悬浮洞府。
@@ -82,13 +82,13 @@ Release 同时提供 `SHA256SUMS.txt`，供校验安装包。
 
 ## 使用
 
-### 作者与插件更新
+### 项目与插件更新
 
-右上角 GitHub 图标打开作者 [@zkilxx](https://github.com/zkilxx) 的主页。底部显示当前版本与更新状态；打开或重新展开面板时自动检查 GitHub 最新正式 Release，成功结果缓存 6 小时。面板保持打开时每小时复核缓存，回到页面时也会检查；可点击「检查更新」立即重试。
+右上角 GitHub 图标打开 [X 修仙项目仓库](https://github.com/zkilxx/x-xiuxian)。底部显示当前版本与更新状态；打开或重新展开面板时自动检查 GitHub 最新正式 Release，成功结果缓存 6 小时。面板保持打开时每小时复核缓存，回到页面时也会检查；可点击「检查更新」立即重试。
 
 发现新版后，底部显示新版本号与下载入口；点击后下载 ZIP，按上方方法替换原目录并重新加载。检测失败会提示重试，保留上次发现的版本，不会把失败显示为「已是最新版本」。自动失败重试间隔为 15 分钟。状态栏高度固定，不挤动面板。
 
-更新检测只查询 GitHub 公开 Release，不发送账号、任务或修行记录，不自动下载安装。首次获得这项功能需要手动安装 0.1.9，之后即可自动检测后续版本。
+更新检测只查询 GitHub 公开 Release，不发送账号、任务或修行记录，不自动下载安装。0.1.9 起支持自动检测；更早版本需先手动安装新版。
 
 ### 设置每日修行
 
@@ -163,7 +163,7 @@ Release 同时提供 `SHA256SUMS.txt`，供校验安装包。
 npm test                # 数据、发布事件与后台流程测试
 npm run check           # 重新构建，检查脚本、清单与资源
 npm run preview         # http://127.0.0.1:4178/demo.html
-npm run package         # release/x-xiuxian-v0.1.9.zip
+npm run package         # release/x-xiuxian-v0.1.10.zip
 ```
 
 当前 **40 项回归测试通过**，覆盖账号隔离、事件去重、成功 / 失败发布、工作室日期与曝光回填、发推回推对账、延迟保护、官方向下校正、奖励净增、粉丝净变、后台任务与提醒。测试使用模拟响应，不代表每次 X 页面更新后的线上行为均已实测。
@@ -177,7 +177,7 @@ npm run docs:screenshots
 npm run test:ui          # 独立临时浏览器加载真实扩展，模拟 X / GitHub 响应
 ```
 
-Playwright 用于文档截图和界面回归验证，不参与扩展运行。真实扩展验证覆盖作者入口、自动与手动检查、新版本提示、离线错误、缓存复用、收起展开和窄窗口布局。截图脚本不会读取现有 Chrome 配置或主动删除本地文件。
+Playwright 用于文档截图和界面回归验证，不参与扩展运行。真实扩展验证覆盖项目入口、自动与手动检查、新版本提示、离线错误、缓存复用、收起展开和窄窗口布局。截图脚本不会读取现有 Chrome 配置或主动删除本地文件。
 
 ```text
 extension/                    可直接加载的 Chrome 扩展

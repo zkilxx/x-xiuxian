@@ -16,12 +16,13 @@ async function main(){
   await worker.evaluate(async()=>{const a=XianCore.blank({handle:'tester',name:'测试道友',followers:1280});a.settings.autoReward=false;a.settings.reminderEnabled=false;await chrome.storage.local.set({'account:tester':a});});
   let mode='available',calls=0;
   const current=JSON.parse(await fs.readFile(path.join(root,'extension/manifest.json'),'utf8')).version;
+  const parts=current.split('.').map(Number);parts[parts.length-1]++;const next=parts.join('.');
   await context.route('**/*',async route=>{
     const url=new URL(route.request().url());
     if(url.href==='https://api.github.com/repos/zkilxx/x-xiuxian/releases/latest'){
       calls++;
       if(mode==='error')return route.fulfill({status:503,body:'Unavailable'});
-      const version=mode==='available'?'0.1.10':current;
+      const version=mode==='available'?next:current;
       return route.fulfill({contentType:'application/json',body:JSON.stringify({tag_name:'v'+version,draft:false,prerelease:false,assets:[{name:`x-xiuxian-v${version}.zip`,state:'uploaded',browser_download_url:`https://github.com/zkilxx/x-xiuxian/releases/download/v${version}/x-xiuxian-v${version}.zip`}]})});
     }
     if(url.origin==='https://x.com')return route.fulfill({contentType:'text/html; charset=utf-8',body:'<!doctype html><html><head><meta charset="utf-8"></head><body><button data-testid="SideNav_AccountSwitcher_Button">测试道友<br>@tester</button><a data-testid="AppTabBar_Profile_Link" href="/tester">Profile</a></body></html>'});
@@ -35,8 +36,8 @@ async function main(){
   await panel.locator('#update-status').getByText('发现新版',{exact:true}).waitFor();
   await panel.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   assert.equal(calls,1);assert.equal(await panel.locator('#installed-version').textContent(),'v'+current);
-  assert.equal(await panel.locator('#author-github').getAttribute('href'),'https://github.com/zkilxx');
-  assert.equal(await panel.locator('#update-download').getAttribute('href'),'https://github.com/zkilxx/x-xiuxian/releases/download/v0.1.10/x-xiuxian-v0.1.10.zip');
+  assert.equal(await panel.locator('#author-github').getAttribute('href'),'https://github.com/zkilxx/x-xiuxian');
+  assert.equal(await panel.locator('#update-download').getAttribute('href'),`https://github.com/zkilxx/x-xiuxian/releases/download/v${next}/x-xiuxian-v${next}.zip`);
   const geometry=()=>panel.evaluate(()=>{const main=document.querySelector('main'),bar=document.getElementById('update-bar'),shell=document.getElementById('shell');return{main:main.getBoundingClientRect().height,bar:bar.getBoundingClientRect().height,shell:shell.getBoundingClientRect().height,rootOverflow:document.documentElement.scrollWidth>innerWidth};});
   const available=await geometry();await page.screenshot({path:path.join(output,'available.png')});
   mode='current';await panel.locator('#update-check').click();await panel.locator('#update-status').getByText('已是最新版本',{exact:true}).waitFor();
@@ -53,7 +54,7 @@ async function main(){
   const header=await panel.evaluate(()=>({brand:document.querySelector('.brand').getBoundingClientRect().right,tools:document.querySelector('.tools').getBoundingClientRect().left,bar:document.getElementById('update-bar').getBoundingClientRect().bottom,height:innerHeight}));
   assert.ok(header.brand<header.tools);assert.ok(header.bar<=header.height);assert.deepEqual(errors,[]);
   await page.screenshot({path:path.join(output,'compact.png')});
-  console.log('PASS: real extension automatic/manual updates, failure, cache, fixed layout, author link, collapse and compact viewport.');
+  console.log('PASS: real extension automatic/manual updates, failure, cache, fixed layout, repository link, collapse and compact viewport.');
   console.log('Artifacts:',output);console.log('Retained isolated browser profile:',profile);
 }
 main().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(context)await context.close();});
