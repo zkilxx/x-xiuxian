@@ -2,20 +2,30 @@
 (() => {
   'use strict';
   const fmt=n=>Number.isFinite(n)?new Intl.NumberFormat('en-US').format(n):'—';
-  const delta=track=>Number.isFinite(track?.delta)?`${track.approximate?'约':''}${track.delta>=0?'+':''}${fmt(track.delta)}${track.partial?'（首次观测后）':''}`:'—';
+  const delta=track=>Number.isFinite(track?.delta)?`${track.approximate?'约':''}${track.delta>=0?'+':''}${fmt(track.delta)}`:'—';
   function text(data){
     const t=data.today,r=data.reward,previous=new Date(Date.parse(t.date+'T00:00:00Z')-86400000).toISOString().slice(0,10);
     const yesterday=data.history?.find(row=>row.date===previous)?.rewardTrack;
     return[
-      `X 修仙 · ${data.taskDate||t.date} 修行记录（${data.taskTimeZone||data.settings.timeZone}）`,
-      `@${data.profile.handle}`,
-      `发推 ${fmt(t.posts)}/${data.settings.posts} · 回推 ${fmt(t.replies)}/${data.settings.replies}`,
-      `曝光 ${fmt((data.studioToday||t.studio)?.totalViews)} · 粉丝 ${fmt(data.profile.followers)}${Number.isFinite(t.followerDelta)?`（观测${t.followerDelta>=0?'+':''}${fmt(t.followerDelta)}）`:''}`,
-      `飞升 ${r?.precision>1?'约':''}${r?.qualified90d==null?'—':(r.qualified90d/10000).toFixed(2)+'W'}/50W`,
-      `昨日净增 ${delta(yesterday)} · 今日新增 ${delta(t.rewardTrack)}`,
-      ...(data.taskDate&&data.taskDate!==t.date?[`增量日期 ${t.date}（${data.settings.timeZone}）`]:[]),
-      '#X修仙',
-      'https://github.com/zkilxx/x-xiuxian'
+      `「@${data.profile.handle}·${t.date} 𝕏 修仙战报」`,
+      '',
+      '「今日修行」',
+      `发推：${fmt(t.posts)}/${data.settings.posts}`,
+      `回推：${fmt(t.replies)}/${data.settings.replies}`,
+      '',
+      '「天地灵气」',
+      `今日总曝光：${fmt((data.studioToday||t.studio)?.totalViews)}`,
+      '',
+      '「道侣」',
+      `粉丝总数：${fmt(data.profile.followers)}`,
+      `今日净增：${Number.isFinite(t.followerDelta)?`${t.followerDelta>=0?'+':''}${fmt(t.followerDelta)}`:'—'}`,
+      '',
+      '「飞升进度」',
+      `创作者曝光总进度：${r?.precision>1?'约':''}${r?.qualified90d==null?'—':(r.qualified90d/10000).toFixed(2)+'W'}/50W`,
+      `昨日净增：${delta(yesterday)}`,
+      `今日新增：${delta(t.rewardTrack)}`,
+      '',
+      '#𝕏修仙面板'
     ].join('\n');
   }
   function dataURL(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('面板图片转换失败，请重试。'));reader.readAsDataURL(blob);});}

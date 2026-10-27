@@ -5,7 +5,7 @@
   <h1>X Xiuxian · Creator Retreat</h1>
   <p>A movable cultivation-inspired dashboard for your daily writing and X creator stats.</p>
   <p>
-    <img src="https://img.shields.io/badge/version-0.1.14-173e34" alt="Version 0.1.14">
+    <img src="https://img.shields.io/badge/version-0.1.15-173e34" alt="Version 0.1.15">
     <img src="https://img.shields.io/badge/Chrome-116%2B-4285F4?logo=googlechrome&logoColor=white" alt="Chrome 116+">
     <img src="https://img.shields.io/badge/Manifest-V3-6d7772" alt="Manifest V3">
     <img src="https://img.shields.io/badge/Data-Local_storage-173e34" alt="Local data storage">
@@ -56,7 +56,7 @@ The panoramic landscape preserves the full composition, with the avatar overlapp
 
 Install as an unpacked Chrome extension. It is not currently listed in the Chrome Web Store.
 
-1. Open [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest), download **`x-xiuxian-v0.1.14.zip`** and extract it.
+1. Open [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest), download **`x-xiuxian-v0.1.15.zip`** and extract it.
 2. Open `chrome://extensions` and turn on **Developer mode**.
 3. Click **Load unpacked** and select the extracted **X修仙** folder containing `manifest.json`.
 4. Sign in to [X](https://x.com) and refresh the page to display the floating panel.
@@ -94,7 +94,7 @@ Only public Release metadata is requested. No account, goal or history data is s
 ### Share your progress
 
 1. Click **分享** in the panel footer.
-2. Generate a local 3× PNG of the home panel plus a summary of posts, replies, impressions, followers, reward progress and yesterday/today changes. Both use the same frozen snapshot.
+2. Generate a local 3× PNG plus the sectioned “𝕏 修仙战报” report, headed by your handle and date and ending with `#𝕏修仙面板`. No links are added. Both use the same frozen snapshot.
 3. A new X composer tab receives the text and PNG, leaving the original tab intact.
 4. Review or edit the text, then click X's publish button yourself.
 
@@ -181,7 +181,7 @@ Core development requires Node.js 20+ and Python 3. The extension uses plain Jav
 npm test                # Data, publishing events and background flow tests
 npm run check           # Rebuild; verify scripts, manifest and assets
 npm run preview         # http://127.0.0.1:4178/demo.html
-npm run package         # release/x-xiuxian-v0.1.14.zip
+npm run package         # release/x-xiuxian-v0.1.15.zip
 ```
 
 All **47 regression tests pass**. Coverage includes account isolation, deduplication, successful and failed publishing, UTC boundaries, impression backfill, publishing reconciliation, lag protection, downward corrections, reward deltas, follower changes, background jobs, reminders, share summaries and source validation. Tests use simulated responses; they do not establish live compatibility after every X update.

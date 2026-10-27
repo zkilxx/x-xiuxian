@@ -3,7 +3,7 @@
   'use strict';
   const tasks=new Map(),pause=()=>new Promise(resolve=>setTimeout(resolve,200));
   const visible=e=>Boolean(e?.getClientRects().length);
-  const normalize=value=>String(value||'').replace(/\r|\u200b/g,'').trim();
+  const normalize=value=>String(value||'').replace(/\r|\u200b/g,'').replace(/\n{3,}/g,'\n\n').trim();
   const previews=root=>[...root.querySelectorAll('[data-testid="attachments"] img,[data-testid="attachments"] video,[data-testid="mediaPreview"]')].filter(visible);
   function identity(){
     const link=document.querySelector('[data-testid="AppTabBar_Profile_Link"]'),button=document.querySelector('[data-testid="SideNav_AccountSwitcher_Button"]');
@@ -24,7 +24,14 @@
     }
     if(!editor||!input||input.disabled||identity()!==request.handle)throw new Error('未找到已确认账号的 X 编辑栏，请检查新标签页后重试。');
     if(normalize(editor.innerText)||input.files.length||previews(root).length)throw new Error('新编辑栏已有草稿或图片，请先处理现有内容，再重试。');
-    editor.focus();if(!document.execCommand('insertText',false,request.text)||normalize(editor.innerText)!==normalize(request.text))throw new Error('未能完整填入文字，请检查新标签页后重试。');
+    editor.focus();
+    const clipboard=new DataTransfer();clipboard.setData('text/plain',request.text);
+    editor.dispatchEvent(new ClipboardEvent('paste',{clipboardData:clipboard,bubbles:true,cancelable:true}));await pause();
+    if(!normalize(editor.innerText)){
+      const html=request.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+      if(!document.execCommand('insertHTML',false,html))throw new Error('未能完整填入文字，请检查新标签页后重试。');
+    }
+    if(normalize(editor.innerText)!==normalize(request.text))throw new Error('未能完整填入文字，请检查新标签页后重试。');
     const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0)),transfer=new DataTransfer();
     transfer.items.add(new File([bytes],String(request.image.filename||'X修仙.png').replace(/[\\/]/g,'-'),{type:'image/png'}));
     input.files=transfer.files;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));
