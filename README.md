@@ -5,7 +5,7 @@
   <h1>X 修仙 · 创作者洞府</h1>
   <p>在 X 页面里，把每日创作、交流与数据增长，收进一座修仙洞府。</p>
   <p>
-    <img src="https://img.shields.io/badge/version-0.1.11-173e34" alt="Version 0.1.11">
+    <img src="https://img.shields.io/badge/version-0.1.12-173e34" alt="Version 0.1.12">
     <img src="https://img.shields.io/badge/Chrome-116%2B-4285F4?logo=googlechrome&logoColor=white" alt="Chrome 116+">
     <img src="https://img.shields.io/badge/Manifest-V3-6d7772" alt="Manifest V3">
     <img src="https://img.shields.io/badge/数据-本机保存-173e34" alt="数据本机保存">
@@ -30,7 +30,7 @@
 | 撰写功法 | 显示距离上次发推的时间与提醒倒计时，到时持续提醒，可去撰写、稍后 15 分钟或确认 |
 | 天地灵气 | 显示工作室当天 Impressions 总曝光，包含认证与未认证用户 |
 | 道侣 | 粉丝总数、当天首次观测后的净变化 |
-| 飞升进度 | 近 90 天认证用户主页曝光的 50W 总进度条，以 13.46W / 50W 形式显示，首页展示昨日净增；日志保存每日净增及每次数值变动 |
+| 飞升进度 | 近 90 天认证用户主页曝光的 50W 总进度条，以 13.46W / 50W 形式显示，首页同时展示昨日净增和今日新增；日志保存每日净增及每次数值变动 |
 | 后台同步 | 奖励 → 工作室分析 → 粉丝资料依次静默读取；不切换当前标签，底部可手动提前同步 |
 | 修行日志 | 查看每天的任务、曝光、粉丝与奖励记录，支持日期筛选、变动明细及 JSON 导出 |
 | 项目 GitHub | 右上角 GitHub 按钮直达 X 修仙项目仓库 |
@@ -55,7 +55,7 @@
 
 目前通过 Chrome 的「加载已解压的扩展程序」安装，尚未上架 Chrome 应用商店。
 
-1. 前往 [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest)，下载 **`x-xiuxian-v0.1.11.zip`** 并解压。
+1. 前往 [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest)，下载 **`x-xiuxian-v0.1.12.zip`** 并解压。
 2. 在 Chrome 地址栏输入 `chrome://extensions`，开启右上角「开发者模式」。
 3. 点击「加载已解压的扩展程序」，选择解压后的 **X修仙** 文件夹，里面应有 `manifest.json`。
 4. 打开并登录 [X](https://x.com)，刷新页面，即可看到悬浮洞府。
@@ -121,7 +121,7 @@ Release 同时提供 `SHA256SUMS.txt`，供校验安装包。
 
 ### 查看历史与每日净增
 
-首页飞升卡片的「昨日净增」读取昨天的已存记录；昨天没有记录时显示「—」，首次观测后的不完整增量会在提示中说明。
+首页飞升卡片同时显示「昨日净增」和「今日新增」。昨日读取昨天的已存记录；今日读取当天最新进度相对前一天末值的净变化。没有对应记录时显示「—」，首次观测后的不完整增量会在提示中说明；滚动扣减造成的负数保留。
 
 「日志」可筛选日期，展开飞升进度变动或修行校正记录，点击「导出 JSON」保存当前账号的记录与设置。
 
@@ -165,7 +165,7 @@ Release 同时提供 `SHA256SUMS.txt`，供校验安装包。
 npm test                # 数据、发布事件与后台流程测试
 npm run check           # 重新构建，检查脚本、清单与资源
 npm run preview         # http://127.0.0.1:4178/demo.html
-npm run package         # release/x-xiuxian-v0.1.11.zip
+npm run package         # release/x-xiuxian-v0.1.12.zip
 ```
 
 当前 **40 项回归测试通过**，覆盖账号隔离、事件去重、成功 / 失败发布、工作室日期与曝光回填、发推回推对账、延迟保护、官方向下校正、奖励净增、粉丝净变、后台任务与提醒。测试使用模拟响应，不代表每次 X 页面更新后的线上行为均已实测。

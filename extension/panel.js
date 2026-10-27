@@ -8,8 +8,14 @@
   let fitFrame=0,lastFitHeight=0;
   function fitPanel(){cancelAnimationFrame(fitFrame);fitFrame=requestAnimationFrame(()=>{const shell=$('shell'),main=$('scroll'),view=$(tab);if(!shell||!main||!view||shell.hidden)return;const style=getComputedStyle(main);const content=view.getBoundingClientRect().height+parseFloat(style.paddingTop)+parseFloat(style.paddingBottom);const fixed=shell.getBoundingClientRect().height-main.getBoundingClientRect().height;const height=Math.ceil(content+fixed);if(Math.abs(height-lastFitHeight)>1){lastFitHeight=height;tell({type:'resize',height});}});}
   const text=(id,value)=>{const el=$(id);if(el)el.textContent=value;};
+  function rewardDelta(id,track,date){
+    const delta=Number.isFinite(track?.delta)?track.delta:null;
+    text(id,delta==null?'—':`${track.approximate?'约 ':''}${delta>=0?'+':''}${fmt(delta)}`);
+    $(id).classList.toggle('negative',delta<0);$(id).classList.toggle('unknown',delta==null);
+    $(id).title=delta==null?`${date||''} 没有飞升进度记录`.trim():track.partial?`${date} 首次观测后净增，非完整全天`:`${date} 最新进度减前一天末次进度（滚动净变化）`;
+  }
   let checkingUpdate=false,updateRequested=false;
-  const installedVersion=globalThis.chrome?.runtime?.getManifest?.().version||'0.1.11';
+  const installedVersion=globalThis.chrome?.runtime?.getManifest?.().version||'0.1.12';
   text('installed-version','v'+installedVersion);
   async function checkUpdates(force=false){
     if(checkingUpdate)return;
@@ -45,12 +51,8 @@
     setProgress('reward-progress',r?.qualified90d||0,500000);
     text('qualified90',`${r?.precision>1?'约 ':''}${r?.qualified90d==null?'—':(r.qualified90d/10000).toFixed(2)+'W'} / 50W 曝光`);
     const yesterday=new Date(Date.parse(t.date+'T00:00:00Z')-86400000).toISOString().slice(0,10);
-    const track=data.history?.find(row=>row.date===yesterday)?.rewardTrack;
-    const delta=Number.isFinite(track?.delta)?track.delta:null;
-    text('reward-yesterday',delta==null?'—':`${track.approximate?'约 ':''}${delta>=0?'+':''}${fmt(delta)}`);
-    $('reward-yesterday').classList.toggle('negative',delta<0);
-    $('reward-yesterday').classList.toggle('unknown',delta==null);
-    $('reward-yesterday').title=delta==null?`${yesterday} 没有飞升进度记录`:track.partial?`${yesterday} 首次观测后净增，非完整全天`:`${yesterday} 末次进度减前一天末次进度`;
+    rewardDelta('reward-yesterday',data.history?.find(row=>row.date===yesterday)?.rewardTrack,yesterday);
+    rewardDelta('reward-today',t.rewardTrack,t.date);
     text('reward-percent',r?.qualified90d!=null?(Math.min(100,r.qualified90d/500000*100).toFixed(1)+'%'):'待读取');
     const sync=data.sync;const syncedAt=sync?.lastCompletedAt;
     text('synced',!s.autoReward?'后台同步已关闭':sync?.running?'后台同步中…':syncedAt?'后台已同步 '+new Date(syncedAt).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',timeZone:s.timeZone})+(sync.complete?'':' · 部分待读取'):sync?.complete===false?'部分数据待读取':'每 5 分钟后台同步');
@@ -88,7 +90,7 @@
     parentOrigin=e.origin==='null'?null:e.origin;const m=e.data;
     if(m.type==='state')render(m.data);
     else if(m.type==='collapsed'){const wasHidden=$('shell').hidden;$('shell').hidden=m.value;$('orb').hidden=!m.value;if(wasHidden&&!m.value){lastFitHeight=0;fitPanel();checkUpdates();}else if(!m.value&&!updateRequested)checkUpdates();}
-    else if(m.type==='locked'){state=null;text('name','静候道友');text('handle','等待 X 登录账号');$('locked').hidden=false;$('avatar').hidden=true;$('avatar').removeAttribute('src');$('avatar-fallback').hidden=false;for(const id of ['total-views','followers','follower-delta'])text(id,'—');text('posts','—');text('replies','—');setProgress('posts-progress',0,3);setProgress('replies-progress',0,20);text('daily-qualified','待读取');text('qualified90','— / 50W 曝光');text('reward-yesterday','—');text('reward-percent','待读取');$('status-dot').classList.remove('active');text('verified-followers','— / 500');setProgress('reward-progress',0,500000);text('synced','等待账号确认');$('history-list').replaceChildren();select('home');for(const id of ['sync','reward-edit','snooze','scan-reward'])if($(id))$(id).disabled=true;timer();}
+    else if(m.type==='locked'){state=null;text('name','静候道友');text('handle','等待 X 登录账号');$('locked').hidden=false;$('avatar').hidden=true;$('avatar').removeAttribute('src');$('avatar-fallback').hidden=false;for(const id of ['total-views','followers','follower-delta'])text(id,'—');text('posts','—');text('replies','—');setProgress('posts-progress',0,3);setProgress('replies-progress',0,20);text('daily-qualified','待读取');text('qualified90','— / 50W 曝光');rewardDelta('reward-yesterday',null);rewardDelta('reward-today',null);text('reward-percent','待读取');$('status-dot').classList.remove('active');text('verified-followers','— / 500');setProgress('reward-progress',0,500000);text('synced','等待账号确认');$('history-list').replaceChildren();select('home');for(const id of ['sync','reward-edit','snooze','scan-reward'])if($(id))$(id).disabled=true;timer();}
     else if(m.type==='error')notice(m.error,true);else if(m.type==='notice')notice(m.text);
   });
   document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>select(b.dataset.tab)));
@@ -103,7 +105,7 @@
   $('reminder-write').onclick=()=>{if(state)state.reminder={...state.reminder,acknowledgedPost:state.lastPost};tell({type:'dismissReminder'});reminderVisible(false,null,0);};
   $('settings-form').onsubmit=e=>{e.preventDefault();if(!state)return notice('请先登录 X 并确认账号。',true);const f=new FormData(e.currentTarget),value={...state.settings};for(const k of ['posts','replies','reminderMinutes','dailyQualifiedGoal'])if(f.has(k))value[k]=Number(f.get(k));value.reminderEnabled=e.currentTarget.elements.reminderEnabled.checked;value.autoReward=e.currentTarget.elements.autoReward.checked;tell({type:'settings',value});};
   $('reward-form').onsubmit=e=>{e.preventDefault();if(!state)return;const f=new FormData(e.currentTarget);const value=Object.fromEntries(['qualified90d','verifiedFollowers'].map(k=>[k,f.get(k)===''?null:Number(f.get(k))]));tell({type:'reward',value});select('home');};
-  $('export').onclick=()=>{if(!state)return;const blob=new Blob([JSON.stringify({app:'X 修仙',version:'0.1.11',exportedAt:new Date().toISOString(),...state},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`X修仙-${state.profile.handle}-${state.today.date}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);};
+  $('export').onclick=()=>{if(!state)return;const blob=new Blob([JSON.stringify({app:'X 修仙',version:'0.1.12',exportedAt:new Date().toISOString(),...state},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`X修仙-${state.profile.handle}-${state.today.date}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);};
   function draggable(element,isOrb=false){let start=null,moved=false;element.addEventListener('pointerdown',e=>{if(e.target.closest('button,a')&&!isOrb)return;if(e.button!==0)return;start={x:e.screenX,y:e.screenY};moved=false;element.setPointerCapture(e.pointerId);tell({type:'drag-start',screenX:e.screenX,screenY:e.screenY});});element.addEventListener('pointermove',e=>{if(!start)return;if(Math.abs(e.screenX-start.x)+Math.abs(e.screenY-start.y)>4)moved=true;tell({type:'drag-move',screenX:e.screenX,screenY:e.screenY});});const end=()=>{if(!start)return;start=null;tell({type:'drag-end'});};element.addEventListener('pointerup',()=>{end();if(isOrb&&!moved)tell({type:'toggle'});});element.addEventListener('pointercancel',end);element.addEventListener('lostpointercapture',end);element.addEventListener('keydown',e=>{const d={ArrowLeft:[-10,0],ArrowRight:[10,0],ArrowUp:[0,-10],ArrowDown:[0,10]}[e.key];if(d){e.preventDefault();tell({type:'move-key',dx:d[0],dy:d[1]});}else if(isOrb&&(e.key==='Enter'||e.key===' ')){e.preventDefault();tell({type:'toggle'});}});}
   draggable($('drag'));draggable($('orb'),true);$('avatar').onerror=()=>{$('avatar').hidden=true;$('avatar-fallback').hidden=false;};
   setInterval(timer,1000);setInterval(()=>{if(!document.hidden&&!$('shell').hidden)checkUpdates();},60*60*1000);

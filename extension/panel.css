@@ -26,3 +26,5 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden}
 /* Author link and quiet update status keep fixed dimensions in every state. */
 .tools{flex-shrink:0}.tools .author-github{width:28px;height:28px;display:grid;place-items:center;color:var(--gold);border-radius:5px;cursor:pointer}.author-github svg{display:block;width:17px;height:17px;fill:currentColor}.tools .author-github:hover{background:#e6c58712;text-decoration:none}.tools .author-github:focus-visible{outline:2px solid var(--jade)}
 .update-bar{height:26px;min-height:26px;flex-shrink:0;display:flex;align-items:center;gap:8px;margin:0 15px;padding-bottom:8px;font-size:9px;color:var(--muted);white-space:nowrap}.update-bar #installed-version{color:#a8b9b0;font-variant-numeric:tabular-nums}.update-bar #update-status{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.update-bar a{color:var(--jade);font-size:10px}.update-bar button{font-size:9px;flex-shrink:0;line-height:18px}.update-bar.has-update #update-status{color:var(--gold)}.reminder-alert{bottom:70px}#notice{bottom:70px}
+
+.ascension-deltas{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.ascension-delta{white-space:nowrap}
