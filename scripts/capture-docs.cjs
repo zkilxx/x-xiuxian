@@ -34,6 +34,7 @@ async function main(){
   await settle();
   await page.locator('#demo-host').screenshot({path:path.join(images,'panel-home.png')});
   await panel.locator('.ascension').screenshot({path:path.join(images,'ascension.png')});
+  await panel.locator('footer').screenshot({path:path.join(images,'footer-actions.png')});
   await panel.locator('[data-tab="history"]').click();await settle();
   await panel.locator('#history-list details').first().evaluate(e=>e.open=true);await settle();
   await page.locator('#demo-host').screenshot({path:path.join(images,'panel-history.png')});
