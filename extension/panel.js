@@ -15,7 +15,7 @@
     $(id).title=delta==null?`${date||''} 没有飞升进度记录`.trim():track.partial?`${date} 首次观测后净增，非完整全天`:`${date} 最新进度减前一天末次进度（滚动净变化）`;
   }
   let checkingUpdate=false,updateRequested=false;
-  const installedVersion=globalThis.chrome?.runtime?.getManifest?.().version||'0.1.18';
+  const installedVersion=globalThis.chrome?.runtime?.getManifest?.().version||'0.1.19';
   text('installed-version','v'+installedVersion);
   async function checkUpdates(force=false){
     if(checkingUpdate)return;
@@ -52,13 +52,15 @@
     state=data;$('locked').hidden=true;
     $('share').disabled=sharing;
     const {profile:p,settings:s,today:t}=data;
-    text('name',p.name);text('handle','@'+p.handle);text('day',(data.taskDate||t.date)?.slice(5).replace('-','月')+'日');
+    text('name',p.name);text('handle','@'+p.handle);const studioDay=data.taskTimeZone==='UTC';
+    text('day',(data.taskDate||t.date)?.slice(5).replace('-','月')+'日'+(studioDay?' · UTC':''));
+    $('day').title=studioDay?'工作室按 UTC 日期统计，北京时间每天 08:00 换日':`按 ${s.timeZone} 日期统计`;
     text('realm',t.posts>=s.posts&&t.replies>=s.replies?'今日功成':t.posts+t.replies>0?'炼气 · 渐入佳境':'炼气 · 初入仙途');
     if(p.avatar&&/^https:\/\/pbs\.twimg\.com\/profile_images\//.test(p.avatar)){$('avatar').src=p.avatar;$('avatar').hidden=false;$('avatar-fallback').hidden=true;}else{$('avatar').hidden=true;$('avatar-fallback').hidden=false;}
     text('posts',`${t.posts} / ${s.posts}`);text('replies',`${t.replies} / ${s.replies}`);
     const taskKinds=['posts','replies'].filter(k=>t.taskSync?.[k]);
-    const taskHint=taskKinds.length===2?(t.taskSync.posts.held||t.taskSync.replies.held?'后台对账中 · 保留新发布':'工作室今日发布统计 · 已校正'):taskKinds.length===1?(taskKinds[0]==='posts'?'发推已对账 · 回推待确认':'回推已对账 · 发推待确认'):'本地记数 · 等待工作室对账';
-    text('task-source',taskHint);
+    const taskHint=taskKinds.length===2?(t.taskSync.posts.held||t.taskSync.replies.held?'后台对账中 · 保留新发布':'工作室发布统计 · 已校正'):taskKinds.length===1?(taskKinds[0]==='posts'?'发推已对账 · 回推待确认':'回推已对账 · 发推待确认'):'本地记数 · 等待工作室对账';
+    text('task-source',taskHint+(studioDay?' · 北京时间 08:00 换日':''));
     setProgress('posts-progress',t.posts,s.posts);setProgress('replies-progress',t.replies,s.replies);
     text('total-views',fmt((data.studioToday||t.studio)?.totalViews));
     text('followers',fmt(p.followers));text('follower-delta',t.followerDelta==null?'—':(t.followerDelta>=0?'+':'')+fmt(t.followerDelta));
@@ -75,7 +77,7 @@
     $('status-dot').classList.toggle('active',!!syncedAt&&s.autoReward);
     const form=$('settings-form');
     if(!form.contains(document.activeElement))for(const [key,value]of Object.entries(s)){const input=form.elements.namedItem(key);if(input){if(input.type==='checkbox')input.checked=value;else input.value=value;}}
-    text('timezone','修行、曝光：工作室日期（UTC）；粉丝、飞升日志：'+s.timeZone);
+    text('timezone','修行、曝光：UTC（北京时间 08:00 换日）；粉丝、飞升日志：'+s.timeZone);
     for(const id of ['sync','reward-edit','snooze','scan-reward'])if($(id))$(id).disabled=false;
     $('snooze').disabled=!data.lastPost||!s.reminderEnabled;if(tab==='history')history();timer();fitPanel();
   }
@@ -123,7 +125,7 @@
   $('reminder-write').onclick=()=>{if(state)state.reminder={...state.reminder,acknowledgedPost:state.lastPost};tell({type:'dismissReminder'});reminderVisible(false,null,0);};
   $('settings-form').onsubmit=e=>{e.preventDefault();if(!state)return notice('请先登录 X 并确认账号。',true);const f=new FormData(e.currentTarget),value={...state.settings};for(const k of ['posts','replies','reminderMinutes','dailyQualifiedGoal'])if(f.has(k))value[k]=Number(f.get(k));value.reminderEnabled=e.currentTarget.elements.reminderEnabled.checked;value.autoReward=e.currentTarget.elements.autoReward.checked;tell({type:'settings',value});};
   $('reward-form').onsubmit=e=>{e.preventDefault();if(!state)return;const f=new FormData(e.currentTarget);const value=Object.fromEntries(['qualified90d','verifiedFollowers'].map(k=>[k,f.get(k)===''?null:Number(f.get(k))]));tell({type:'reward',value});select('home');};
-  $('export').onclick=()=>{if(!state)return;const blob=new Blob([JSON.stringify({app:'X 修仙',version:'0.1.18',exportedAt:new Date().toISOString(),...state},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`X修仙-${state.profile.handle}-${state.today.date}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);};
+  $('export').onclick=()=>{if(!state)return;const blob=new Blob([JSON.stringify({app:'X 修仙',version:'0.1.19',exportedAt:new Date().toISOString(),...state},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`X修仙-${state.profile.handle}-${state.today.date}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);};
   function draggable(element,isOrb=false){let start=null,moved=false;element.addEventListener('pointerdown',e=>{if(e.target.closest('button,a')&&!isOrb)return;if(e.button!==0)return;start={x:e.screenX,y:e.screenY};moved=false;element.setPointerCapture(e.pointerId);tell({type:'drag-start',screenX:e.screenX,screenY:e.screenY});});element.addEventListener('pointermove',e=>{if(!start)return;if(Math.abs(e.screenX-start.x)+Math.abs(e.screenY-start.y)>4)moved=true;tell({type:'drag-move',screenX:e.screenX,screenY:e.screenY});});const end=()=>{if(!start)return;start=null;tell({type:'drag-end'});};element.addEventListener('pointerup',()=>{end();if(isOrb&&!moved)tell({type:'toggle'});});element.addEventListener('pointercancel',end);element.addEventListener('lostpointercapture',end);element.addEventListener('keydown',e=>{const d={ArrowLeft:[-10,0],ArrowRight:[10,0],ArrowUp:[0,-10],ArrowDown:[0,10]}[e.key];if(d){e.preventDefault();tell({type:'move-key',dx:d[0],dy:d[1]});}else if(isOrb&&(e.key==='Enter'||e.key===' ')){e.preventDefault();tell({type:'toggle'});}});}
   draggable($('drag'));draggable($('orb'),true);$('avatar').onerror=()=>{$('avatar').hidden=true;$('avatar-fallback').hidden=false;};
   setInterval(timer,1000);setInterval(()=>{if(!document.hidden&&!$('shell').hidden)checkUpdates();},60*60*1000);
