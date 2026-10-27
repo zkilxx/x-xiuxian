@@ -87,6 +87,10 @@
     if(m.type==='refresh'){identify().then(refresh);return;}
     if(m.type==='scanReward'&&profile){ask({type:'scanReward',handle:profile.handle}).then(()=>send({type:'notice',text:'正在后台核对 X 原创内容奖励进度…'})).catch(showError);return;}
     if(m.type==='sync'&&profile){ask({type:'scanStudio',handle:profile.handle,manual:true}).then(()=>send({type:'notice',text:'正在后台读取创作者工作室…'})).catch(showError);return;}
+    if(m.type==='share'&&profile){
+      if(m.handle!==profile.handle){send({type:'shareResult',id:m.id,ok:false,error:'当前账号已变化，请重新生成分享。'});return;}
+      ask({type:'sharePanel',handle:profile.handle,text:m.text,image:m.image}).then(()=>send({type:'shareResult',id:m.id,ok:true})).catch(error=>send({type:'shareResult',id:m.id,ok:false,error:error.message}));return;
+    }
     if(['settings','reward','snooze','dismissReminder'].includes(m.type)&&profile){const h=profile.handle;ask({type:m.type,handle:h,value:m.value}).then(data=>{if(lastHandle===h){latest=data;send({type:'state',data});if(m.type==='settings'||m.type==='reward')send({type:'notice',text:'已保存到此账号的本地洞府。'});}}).catch(showError);}
   });
   async function mount(){

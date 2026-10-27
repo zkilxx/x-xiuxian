@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "X 修仙 · 创作者洞府",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "可自由拖动的修仙洞府：每日发推与回推任务、发推提醒、曝光灵气、道侣与修行日志。",
   "minimum_chrome_version": "116",
   "permissions": [
@@ -12,7 +12,8 @@
   "host_permissions": [
     "https://x.com/*",
     "https://twitter.com/*",
-    "https://api.github.com/*"
+    "https://api.github.com/*",
+    "https://pbs.twimg.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -53,6 +54,16 @@
         "content-bundle.js"
       ],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*"
+      ],
+      "js": [
+        "composer.js"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
@@ -62,7 +73,8 @@
         "panel.js",
         "panel.css",
         "core.js",
-        "assets/*"
+        "assets/*",
+        "share.js"
       ],
       "matches": [
         "https://x.com/*",

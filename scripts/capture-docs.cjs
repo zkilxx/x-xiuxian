@@ -33,6 +33,7 @@ async function main(){
   async function settle(){await page.clock.runFor(300);await page.waitForFunction(()=>{const host=document.querySelector('#demo-host');return host.offsetHeight>300&&host.offsetHeight<816;});}
   await settle();
   await page.locator('#demo-host').screenshot({path:path.join(images,'panel-home.png')});
+  await panel.locator('.ascension').screenshot({path:path.join(images,'ascension.png')});
   await panel.locator('[data-tab="history"]').click();await settle();
   await panel.locator('#history-list details').first().evaluate(e=>e.open=true);await settle();
   await page.locator('#demo-host').screenshot({path:path.join(images,'panel-history.png')});

@@ -1,6 +1,6 @@
 'use strict';
-importScripts('core.js','updates.js');
-chrome.storage.local.set({runtimeBuild:'20261026-github-updates-v9'});
+importScripts('core.js','updates.js','share-background.js');
+chrome.storage.local.set({runtimeBuild:'20261027-share-v13'});
 const C = XianCore, sessions = new Map();
 let queue = Promise.resolve();
 const serial = fn => { const task = queue.then(fn); queue = task.catch(()=>{}); return task; };
@@ -98,6 +98,13 @@ async function process(message,sender) {
   return C.snapshot(a);
 }
 chrome.runtime.onMessage.addListener((message,sender,sendResponse) => {
+  if(message?.type==='sharePanel'){
+    XianSharing.open(message,sender).then(data=>sendResponse({ok:true,data})).catch(error=>sendResponse({ok:false,error:error.message}));return true;
+  }
+  if(message?.type==='shareAvatar'){
+    if(sender.id!==chrome.runtime.id||sender.url?.split('#')[0]!==chrome.runtime.getURL('panel.html')){sendResponse({ok:false,error:'头像导出仅限插件面板。'});return false;}
+    XianSharing.avatar(C.handle(message.handle)).then(data=>sendResponse({ok:true,data})).catch(()=>sendResponse({ok:true,data:''}));return true;
+  }
   if(message?.type==='checkUpdates'){
     if(sender.id!==chrome.runtime.id||sender.url?.split('#')[0]!==chrome.runtime.getURL('panel.html')){sendResponse({ok:false,error:'更新检测仅限插件面板。'});return false;}
     XianUpdates.checkForUpdates(message.force===true).then(data=>sendResponse({ok:true,data})).catch(()=>sendResponse({ok:false,error:'暂时无法检查更新。'}));return true;

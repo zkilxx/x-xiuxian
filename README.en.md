@@ -5,7 +5,7 @@
   <h1>X Xiuxian · Creator Retreat</h1>
   <p>A movable cultivation-inspired dashboard for your daily writing and X creator stats.</p>
   <p>
-    <img src="https://img.shields.io/badge/version-0.1.12-173e34" alt="Version 0.1.12">
+    <img src="https://img.shields.io/badge/version-0.1.13-173e34" alt="Version 0.1.13">
     <img src="https://img.shields.io/badge/Chrome-116%2B-4285F4?logo=googlechrome&logoColor=white" alt="Chrome 116+">
     <img src="https://img.shields.io/badge/Manifest-V3-6d7772" alt="Manifest V3">
     <img src="https://img.shields.io/badge/Data-Local_storage-173e34" alt="Local data storage">
@@ -33,6 +33,7 @@ No API key and no build step. Read the X account signed in to your browser, set 
 | Ascension progress | A 500K progress bar for verified home-timeline impressions over the last 90 days, displayed as 13.46W / 50W (W = 10,000), with yesterday’s and today’s net changes on the home view and daily readings in history |
 | Background sync | Rewards → account analytics → follower profile, using an inactive temporary tab; manual sync is available in the footer |
 | History | Daily records, date filtering, reward and count adjustments, and JSON export |
+| Share to X | Generate a high-resolution PNG and data summary, add both to a new X composer tab, then review and post yourself |
 | Project GitHub | Open the X Xiuxian repository from the GitHub icon in the header |
 | Update checks | Check the latest stable GitHub Release when opening the panel, with a six-hour cache and a manual check button |
 | Local storage | No custom backend, telemetry, separate sign-in or API key |
@@ -55,7 +56,7 @@ The panoramic landscape preserves the full composition, with the avatar overlapp
 
 Install as an unpacked Chrome extension. It is not currently listed in the Chrome Web Store.
 
-1. Open [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest), download **`x-xiuxian-v0.1.12.zip`** and extract it.
+1. Open [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest), download **`x-xiuxian-v0.1.13.zip`** and extract it.
 2. Open `chrome://extensions` and turn on **Developer mode**.
 3. Click **Load unpacked** and select the extracted **X修仙** folder containing `manifest.json`.
 4. Sign in to [X](https://x.com) and refresh the page to display the floating panel.
@@ -89,6 +90,19 @@ The GitHub icon in the header opens the [X Xiuxian repository](https://github.co
 When an update is available, a version link downloads its ZIP. Replace files in the existing folder and reload as described above. Failed checks retain the last known release and show a retry message instead of claiming you are up to date; automatic retries use a 15-minute backoff. The status row keeps a fixed height.
 
 Only public Release metadata is requested. No account, goal or history data is sent, and no download or installation starts automatically. Update checks are available from 0.1.9; earlier versions need a manual upgrade first.
+
+### Share your progress
+
+1. Click **分享** in the panel footer.
+2. Generate a local 3× PNG of the home panel plus a summary of posts, replies, impressions, followers, reward progress and yesterday/today changes. Both use the same frozen snapshot.
+3. A new X composer tab receives the text and PNG, leaving the original tab intact.
+4. Review or edit the text, then click X's publish button yourself.
+
+Only the extension panel is rendered, not the X page or other windows. Avatar failures use the “仙” placeholder. Existing drafts or attachments, a different signed-in account, missing sign-in or upload failure stop the flow with guidance. Nothing is posted automatically. The PNG must be at most 5MB; X page changes may require an adapter update.
+
+![Share flow verified in a simulated X composer with text and panel PNG](docs/images/share-composer.png)
+
+> The share screenshot uses “测试道友 / @tester” and a local mock composer. No real post was published.
 
 ### Set daily goals
 
@@ -136,7 +150,7 @@ Rolling progress may fall because of expiration or platform corrections; negativ
 
 The extension uses your existing X session to read the signed-in profile, successful publishing events and creator data. Records and settings stay in `chrome.storage.local`; transient state uses `chrome.storage.session`. Accounts are stored separately.
 
-There is no custom backend, telemetry or third-party AI request. The extension does not save post text, direct messages, cookies, authorization headers or API keys. It does not automatically post, reply, like or follow. Post metadata is retained for up to 120 days / 20,000 posts; daily snapshots are stored separately.
+There is no custom backend, telemetry or third-party AI request. Only clicking **分享** sends the selected summary and panel PNG to X's native composer; you confirm publication yourself. The extension does not save post text, direct messages, cookies, authorization headers or API keys. It does not automatically post, reply, like or follow. Post metadata is retained for up to 120 days / 20,000 posts; daily snapshots are stored separately.
 
 | Permission or site | Purpose |
 | --- | --- |
@@ -144,6 +158,7 @@ There is no custom backend, telemetry or third-party AI request. The extension d
 | `alarms` | Schedule sync and writing reminders |
 | `notifications` | Show system notifications when reminders are due |
 | `api.github.com` | Read this repository's public Release version and package links |
+| `pbs.twimg.com` | Fetch the public avatar after a share click and embed it in the locally rendered PNG |
 | `x.com`, `twitter.com` | Display the panel, observe publishing success and read your creator data |
 
 Personal verification records, account screenshots and earlier design candidates remain local and are not included in the source repository or package.
@@ -152,6 +167,7 @@ Personal verification records, account screenshots and earlier design candidates
 
 - Built for desktop Chrome 116 or later; the current interface is Chinese.
 - Background reads require the browser to be running, a valid X session and access to the relevant creator pages.
+- Background reads use website scripting and carry platform-policy risk; account restrictions cannot be ruled out. Automatic sync can be disabled in settings. Read the [X automation rules](https://help.x.com/en/rules-and-policies/x-automation) before use.
 - Five minutes is a scheduled interval. Sleep, network errors, throttling and X data delays can postpone updates. Failed reads do not overwrite existing values with zero.
 - X pages and response structures may change. Refresh X and try manual sync before reporting an [issue](https://github.com/zkilxx/x-xiuxian/issues).
 - 500K is the displayed progress target, not confirmation of all participation or earnings requirements. The current X page determines eligibility.
@@ -165,10 +181,10 @@ Core development requires Node.js 20+ and Python 3. The extension uses plain Jav
 npm test                # Data, publishing events and background flow tests
 npm run check           # Rebuild; verify scripts, manifest and assets
 npm run preview         # http://127.0.0.1:4178/demo.html
-npm run package         # release/x-xiuxian-v0.1.12.zip
+npm run package         # release/x-xiuxian-v0.1.13.zip
 ```
 
-All **40 regression tests pass**. Coverage includes account isolation, deduplication, successful and failed publishing, UTC boundaries, impression backfill, publishing reconciliation, lag protection, downward corrections, reward deltas, follower changes, background jobs and reminders. Tests use simulated responses; they do not establish live compatibility after every X update.
+All **47 regression tests pass**. Coverage includes account isolation, deduplication, successful and failed publishing, UTC boundaries, impression backfill, publishing reconciliation, lag protection, downward corrections, reward deltas, follower changes, background jobs, reminders, share summaries and source validation. Tests use simulated responses; they do not establish live compatibility after every X update.
 
 The demo page uses fictional data separate from real account storage and is excluded from the package. Documentation screenshots render the actual panel in an isolated headless browser with a fixed date and local requests only, without signing in to X:
 
@@ -177,6 +193,7 @@ npm ci
 npx playwright install chromium
 npm run docs:screenshots
 npm run test:ui          # Real extension, isolated profile, mocked X / GitHub responses
+npm run test:share       # Real extension, mocked composer: text, PNG, draft guards, no posting
 ```
 
 Playwright is a development dependency for screenshots and UI checks, not an extension runtime dependency. The real-extension flow covers the repository link, automatic and manual checks, available updates, offline errors, caching, collapse/expand and a compact viewport. The screenshot script does not read your existing Chrome profile or automatically delete local files.
@@ -185,6 +202,9 @@ Playwright is a development dependency for screenshots and UI checks, not an ext
 extension/                    Loadable Chrome extension
   background.js               Background sync, account storage and notifications
   updates.js                  Release checks, version comparison and caching
+  share.js                    Local panel PNG and summary
+  share-background.js         New-composer coordination and public avatar reads
+  composer.js                 Attach text and PNG; never publish
   bridge.js                   Publishing events and X response observation
   content.js / feedback.js    Panel injection, dragging and reply +1
   core.js                     Counts, dates, reconciliation and daily deltas

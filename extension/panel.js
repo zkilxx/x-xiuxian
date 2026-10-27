@@ -2,7 +2,7 @@
   'use strict';
   const $=id=>document.getElementById(id),C=XianCore;
   const fmt=n=>n==null?'—':new Intl.NumberFormat('en-US').format(n);
-  let state=null,noticeTimer,tab='home',parentOrigin=null;const channel=location.hash.slice(1);
+  let state=null,noticeTimer,tab='home',parentOrigin=null,sharing=false,shareTimer,shareId;const channel=location.hash.slice(1);
   const tell=message=>parent.postMessage({source:'xian-panel-v1',channel,...message},parentOrigin||'*');
   function select(next){tab=next;document.querySelectorAll('.view').forEach(e=>e.hidden=e.id!==next);document.querySelectorAll('nav button').forEach(e=>{e.classList.toggle('selected',e.dataset.tab===next);e.setAttribute('aria-pressed',e.dataset.tab===next?'true':'false');});$('scroll').scrollTop=0;if(next==='history')history();fitPanel();}
   let fitFrame=0,lastFitHeight=0;
@@ -15,7 +15,7 @@
     $(id).title=delta==null?`${date||''} 没有飞升进度记录`.trim():track.partial?`${date} 首次观测后净增，非完整全天`:`${date} 最新进度减前一天末次进度（滚动净变化）`;
   }
   let checkingUpdate=false,updateRequested=false;
-  const installedVersion=globalThis.chrome?.runtime?.getManifest?.().version||'0.1.12';
+  const installedVersion=globalThis.chrome?.runtime?.getManifest?.().version||'0.1.13';
   text('installed-version','v'+installedVersion);
   async function checkUpdates(force=false){
     if(checkingUpdate)return;
@@ -33,8 +33,24 @@
     finally{checkingUpdate=false;$('update-check').disabled=false;}
   }
   const setProgress=(id,value,max)=>{const p=$(id);p.max=max;p.value=Math.min(value||0,max);};
+  function sharingState(value){sharing=value;$('share').disabled=value||!state;$('share').textContent=value?'分享中':'分享';}
+  async function share(){
+    if(sharing||!state)return;
+    if(!globalThis.chrome?.runtime?.id)return notice('安装插件后可将文字和面板图片放入 X 编辑栏。');
+    clearTimeout(noticeTimer);$('notice').hidden=true;$('notice').textContent='';shareId=crypto.randomUUID();sharingState(true);select('home');
+    try{
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const snapshot=structuredClone(state),summary=XianShare.text(snapshot);
+      const avatar=chrome.runtime.sendMessage({type:'shareAvatar',handle:snapshot.profile.handle}).then(r=>r?.ok?r.data:'').catch(()=>'');
+      const image=await XianShare.capture($('shell'),avatar);image.filename=`X修仙-${snapshot.profile.handle}-${snapshot.today.date}.png`;
+      if(state?.profile.handle!==snapshot.profile.handle)throw new Error('当前账号已变化，请重新生成分享。');
+      shareTimer=setTimeout(()=>{sharingState(false);notice('分享等待超时，请检查新标签页，避免重复添加。',true);},90000);
+      tell({type:'share',id:shareId,handle:snapshot.profile.handle,text:summary,image});
+    }catch(error){sharingState(false);notice('分享失败：'+error.message,true);}
+  }
   function render(data){
     state=data;$('locked').hidden=true;
+    $('share').disabled=sharing;
     const {profile:p,settings:s,today:t}=data;
     text('name',p.name);text('handle','@'+p.handle);text('day',(data.taskDate||t.date)?.slice(5).replace('-','月')+'日');
     text('realm',t.posts>=s.posts&&t.replies>=s.replies?'今日功成':t.posts+t.replies>0?'炼气 · 渐入佳境':'炼气 · 初入仙途');
@@ -90,11 +106,13 @@
     parentOrigin=e.origin==='null'?null:e.origin;const m=e.data;
     if(m.type==='state')render(m.data);
     else if(m.type==='collapsed'){const wasHidden=$('shell').hidden;$('shell').hidden=m.value;$('orb').hidden=!m.value;if(wasHidden&&!m.value){lastFitHeight=0;fitPanel();checkUpdates();}else if(!m.value&&!updateRequested)checkUpdates();}
-    else if(m.type==='locked'){state=null;text('name','静候道友');text('handle','等待 X 登录账号');$('locked').hidden=false;$('avatar').hidden=true;$('avatar').removeAttribute('src');$('avatar-fallback').hidden=false;for(const id of ['total-views','followers','follower-delta'])text(id,'—');text('posts','—');text('replies','—');setProgress('posts-progress',0,3);setProgress('replies-progress',0,20);text('daily-qualified','待读取');text('qualified90','— / 50W 曝光');rewardDelta('reward-yesterday',null);rewardDelta('reward-today',null);text('reward-percent','待读取');$('status-dot').classList.remove('active');text('verified-followers','— / 500');setProgress('reward-progress',0,500000);text('synced','等待账号确认');$('history-list').replaceChildren();select('home');for(const id of ['sync','reward-edit','snooze','scan-reward'])if($(id))$(id).disabled=true;timer();}
+    else if(m.type==='locked'){state=null;text('name','静候道友');text('handle','等待 X 登录账号');$('locked').hidden=false;$('avatar').hidden=true;$('avatar').removeAttribute('src');$('avatar-fallback').hidden=false;for(const id of ['total-views','followers','follower-delta'])text(id,'—');text('posts','—');text('replies','—');setProgress('posts-progress',0,3);setProgress('replies-progress',0,20);text('daily-qualified','待读取');text('qualified90','— / 50W 曝光');rewardDelta('reward-yesterday',null);rewardDelta('reward-today',null);text('reward-percent','待读取');$('status-dot').classList.remove('active');text('verified-followers','— / 500');setProgress('reward-progress',0,500000);text('synced','等待账号确认');$('history-list').replaceChildren();select('home');for(const id of ['sync','share','reward-edit','snooze','scan-reward'])if($(id))$(id).disabled=true;timer();}
+    else if(m.type==='shareResult'&&m.id===shareId){clearTimeout(shareTimer);sharingState(false);notice(m.ok?'文字和面板图片已放入 X 编辑栏，核对后发布。':'分享失败：'+m.error,!m.ok);}
     else if(m.type==='error')notice(m.error,true);else if(m.type==='notice')notice(m.text);
   });
   document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>select(b.dataset.tab)));
   $('update-check').onclick=()=>checkUpdates(true);
+  $('share').onclick=share;
   $('settings-tab').onclick=()=>select('settings');$('minimize').onclick=()=>tell({type:'toggle'});$('sync').onclick=()=>tell({type:'sync'});
   if($('scan-reward'))$('scan-reward').onclick=()=>tell({type:'scanReward'});
   if($('reward-edit'))$('reward-edit').onclick=()=>{select('reward');const r=state?.reward;for(const k of ['qualified90d','verifiedFollowers'])$('reward-form').elements.namedItem(k).value=r?.date===state?.today.date?r?.[k]??'':'';};
@@ -105,7 +123,7 @@
   $('reminder-write').onclick=()=>{if(state)state.reminder={...state.reminder,acknowledgedPost:state.lastPost};tell({type:'dismissReminder'});reminderVisible(false,null,0);};
   $('settings-form').onsubmit=e=>{e.preventDefault();if(!state)return notice('请先登录 X 并确认账号。',true);const f=new FormData(e.currentTarget),value={...state.settings};for(const k of ['posts','replies','reminderMinutes','dailyQualifiedGoal'])if(f.has(k))value[k]=Number(f.get(k));value.reminderEnabled=e.currentTarget.elements.reminderEnabled.checked;value.autoReward=e.currentTarget.elements.autoReward.checked;tell({type:'settings',value});};
   $('reward-form').onsubmit=e=>{e.preventDefault();if(!state)return;const f=new FormData(e.currentTarget);const value=Object.fromEntries(['qualified90d','verifiedFollowers'].map(k=>[k,f.get(k)===''?null:Number(f.get(k))]));tell({type:'reward',value});select('home');};
-  $('export').onclick=()=>{if(!state)return;const blob=new Blob([JSON.stringify({app:'X 修仙',version:'0.1.12',exportedAt:new Date().toISOString(),...state},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`X修仙-${state.profile.handle}-${state.today.date}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);};
+  $('export').onclick=()=>{if(!state)return;const blob=new Blob([JSON.stringify({app:'X 修仙',version:'0.1.13',exportedAt:new Date().toISOString(),...state},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`X修仙-${state.profile.handle}-${state.today.date}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);};
   function draggable(element,isOrb=false){let start=null,moved=false;element.addEventListener('pointerdown',e=>{if(e.target.closest('button,a')&&!isOrb)return;if(e.button!==0)return;start={x:e.screenX,y:e.screenY};moved=false;element.setPointerCapture(e.pointerId);tell({type:'drag-start',screenX:e.screenX,screenY:e.screenY});});element.addEventListener('pointermove',e=>{if(!start)return;if(Math.abs(e.screenX-start.x)+Math.abs(e.screenY-start.y)>4)moved=true;tell({type:'drag-move',screenX:e.screenX,screenY:e.screenY});});const end=()=>{if(!start)return;start=null;tell({type:'drag-end'});};element.addEventListener('pointerup',()=>{end();if(isOrb&&!moved)tell({type:'toggle'});});element.addEventListener('pointercancel',end);element.addEventListener('lostpointercapture',end);element.addEventListener('keydown',e=>{const d={ArrowLeft:[-10,0],ArrowRight:[10,0],ArrowUp:[0,-10],ArrowDown:[0,10]}[e.key];if(d){e.preventDefault();tell({type:'move-key',dx:d[0],dy:d[1]});}else if(isOrb&&(e.key==='Enter'||e.key===' ')){e.preventDefault();tell({type:'toggle'});}});}
   draggable($('drag'));draggable($('orb'),true);$('avatar').onerror=()=>{$('avatar').hidden=true;$('avatar-fallback').hidden=false;};
   setInterval(timer,1000);setInterval(()=>{if(!document.hidden&&!$('shell').hidden)checkUpdates();},60*60*1000);
