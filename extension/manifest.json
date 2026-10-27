@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "X 修仙 · 创作者洞府",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "可自由拖动的修仙洞府：每日发推与回推任务、发推提醒、曝光灵气、道侣与修行日志。",
   "minimum_chrome_version": "116",
   "permissions": [

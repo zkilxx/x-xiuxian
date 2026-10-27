@@ -68,7 +68,7 @@
     clone.style.width=width+'px';clone.style.height=height+'px';clone.style.position='relative';clone.style.margin='0';
     const cloneMain=clone.querySelector('main');cloneMain.style.height=main.scrollHeight+'px';cloneMain.style.flex='none';cloneMain.style.overflow='visible';
     for(const id of ['notice','reminder-alert']){const element=clone.querySelector('#'+id);if(element){element.hidden=true;element.style.display='none';}}
-    const share=clone.querySelector('#share');if(share){share.textContent='分享';share.disabled=false;share.style.opacity='1';}
+    const share=clone.querySelector('#share');if(share){share.textContent='↗ 分享';share.disabled=false;share.style.opacity='1';}
     await Promise.all(work);await document.fonts.ready;
     const wrapper=document.createElementNS('http://www.w3.org/1999/xhtml','div');wrapper.style.cssText=`width:${width}px;height:${height}px;background:#0b1a1b;border-radius:14px;overflow:hidden`;wrapper.append(clone);
     const xml=new XMLSerializer().serializeToString(wrapper);

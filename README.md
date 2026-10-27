@@ -5,7 +5,7 @@
   <h1>X 修仙 · 创作者洞府</h1>
   <p>在 X 页面里，把每日创作、交流与数据增长，收进一座修仙洞府。</p>
   <p>
-    <img src="https://img.shields.io/badge/version-0.1.15-173e34" alt="Version 0.1.15">
+    <img src="https://img.shields.io/badge/version-0.1.16-173e34" alt="Version 0.1.16">
     <img src="https://img.shields.io/badge/Chrome-116%2B-4285F4?logo=googlechrome&logoColor=white" alt="Chrome 116+">
     <img src="https://img.shields.io/badge/Manifest-V3-6d7772" alt="Manifest V3">
     <img src="https://img.shields.io/badge/数据-本机保存-173e34" alt="数据本机保存">
@@ -56,7 +56,7 @@
 
 目前通过 Chrome 的「加载已解压的扩展程序」安装，尚未上架 Chrome 应用商店。
 
-1. 前往 [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest)，下载 **`x-xiuxian-v0.1.15.zip`** 并解压。
+1. 前往 [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest)，下载 **`x-xiuxian-v0.1.16.zip`** 并解压。
 2. 在 Chrome 地址栏输入 `chrome://extensions`，开启右上角「开发者模式」。
 3. 点击「加载已解压的扩展程序」，选择解压后的 **X修仙** 文件夹，里面应有 `manifest.json`。
 4. 打开并登录 [X](https://x.com)，刷新页面，即可看到悬浮洞府。
@@ -181,7 +181,7 @@ Release 同时提供 `SHA256SUMS.txt`，供校验安装包。
 npm test                # 数据、发布事件与后台流程测试
 npm run check           # 重新构建，检查脚本、清单与资源
 npm run preview         # http://127.0.0.1:4178/demo.html
-npm run package         # release/x-xiuxian-v0.1.15.zip
+npm run package         # release/x-xiuxian-v0.1.16.zip
 ```
 
 当前 **47 项回归测试通过**，覆盖账号隔离、事件去重、成功 / 失败发布、工作室日期与曝光回填、发推回推对账、延迟保护、官方向下校正、奖励净增、粉丝净变、后台任务、提醒、分享摘要与分享来源校验。测试使用模拟响应，不代表每次 X 页面更新后的线上行为均已实测。
