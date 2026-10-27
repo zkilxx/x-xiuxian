@@ -72,8 +72,10 @@
     clone.style.width=width+'px';clone.style.height=height+'px';clone.style.position='relative';clone.style.margin='0';
     const cloneMain=clone.querySelector('main');cloneMain.style.height=main.scrollHeight+'px';cloneMain.style.flex='none';cloneMain.style.overflow='visible';
     for(const id of ['notice','reminder-alert']){const element=clone.querySelector('#'+id);if(element){element.hidden=true;element.style.display='none';}}
-    const credit=document.createElement('div');credit.textContent='作者 𝕏｜八万（@0xbawan）';
-    credit.style.cssText=`height:${creditHeight}px;min-height:${creditHeight}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin:0 15px;border-top:1px solid #b29a5a35;color:#c5b589;font:11px/1.4 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;white-space:nowrap`;
+    const credit=document.createElement('a');credit.href='https://github.com/zkilxx/x-xiuxian';
+    const github=shell.querySelector('#author-github svg').cloneNode(true);github.style.cssText='width:14px;height:14px;flex-shrink:0;display:block;fill:currentColor';
+    credit.append(github,document.createTextNode('github.com/zkilxx/x-xiuxian'));
+    credit.style.cssText=`height:${creditHeight}px;min-height:${creditHeight}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;margin:0 15px;border-top:1px solid #b29a5a35;color:#c5b589;font:11px/1.4 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;white-space:nowrap`;
     clone.append(credit);
     await Promise.all(work);await document.fonts.ready;
     const wrapper=document.createElementNS('http://www.w3.org/1999/xhtml','div');wrapper.style.cssText=`width:${width}px;height:${height}px;background:#0b1a1b;border-radius:14px;overflow:hidden`;wrapper.append(clone);

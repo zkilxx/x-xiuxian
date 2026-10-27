@@ -5,7 +5,7 @@
   <h1>X 修仙 · 创作者洞府</h1>
   <p>在 X 页面里，把每日创作、交流与数据增长，收进一座修仙洞府。</p>
   <p>
-    <img src="https://img.shields.io/badge/version-0.1.17-173e34" alt="Version 0.1.17">
+    <img src="https://img.shields.io/badge/version-0.1.18-173e34" alt="Version 0.1.18">
     <img src="https://img.shields.io/badge/Chrome-116%2B-4285F4?logo=googlechrome&logoColor=white" alt="Chrome 116+">
     <img src="https://img.shields.io/badge/Manifest-V3-6d7772" alt="Manifest V3">
     <img src="https://img.shields.io/badge/数据-本机保存-173e34" alt="数据本机保存">
@@ -56,7 +56,7 @@
 
 目前通过 Chrome 的「加载已解压的扩展程序」安装，尚未上架 Chrome 应用商店。
 
-1. 前往 [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest)，下载 **`x-xiuxian-v0.1.17.zip`** 并解压。
+1. 前往 [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest)，下载 **`x-xiuxian-v0.1.18.zip`** 并解压。
 2. 在 Chrome 地址栏输入 `chrome://extensions`，开启右上角「开发者模式」。
 3. 点击「加载已解压的扩展程序」，选择解压后的 **X修仙** 文件夹，里面应有 `manifest.json`。
 4. 打开并登录 [X](https://x.com)，刷新页面，即可看到悬浮洞府。
@@ -98,7 +98,7 @@ Release 同时提供 `SHA256SUMS.txt`，供校验安装包。
 3. 新标签页打开 X 发帖编辑栏，自动填入文字并添加面板图片；原标签页保留。
 4. 核对内容，可自行改写文字，最后由你点击 X 的发布按钮。
 
-分享只生成并上传插件面板，不截取 X 网页或其他窗口。分享图隐藏底部按钮、同步状态与版本信息，改为显示「作者 𝕏｜八万（@0xbawan）」；面板本身不受影响。头像读取失败时使用「仙」字占位。若新编辑栏已有草稿或附件、登录账号不一致、未登录或上传失败，会停止并提示，不覆盖已有内容，不自动发布。单张 PNG 最大 5MB；页面结构变化时可能需要适配。
+分享只生成并上传插件面板，不截取 X 网页或其他窗口。分享图隐藏底部按钮、同步状态与版本信息，改为显示 GitHub 图标与项目仓库地址 `github.com/zkilxx/x-xiuxian`；面板本身不受影响。头像读取失败时使用「仙」字占位。若新编辑栏已有草稿或附件、登录账号不一致、未登录或上传失败，会停止并提示，不覆盖已有内容，不自动发布。单张 PNG 最大 5MB；页面结构变化时可能需要适配。
 
 ![分享流程验证：模拟 X 编辑栏中已填入数据摘要和面板 PNG](docs/images/share-composer.png)
 
@@ -181,7 +181,7 @@ Release 同时提供 `SHA256SUMS.txt`，供校验安装包。
 npm test                # 数据、发布事件与后台流程测试
 npm run check           # 重新构建，检查脚本、清单与资源
 npm run preview         # http://127.0.0.1:4178/demo.html
-npm run package         # release/x-xiuxian-v0.1.17.zip
+npm run package         # release/x-xiuxian-v0.1.18.zip
 ```
 
 当前 **47 项回归测试通过**，覆盖账号隔离、事件去重、成功 / 失败发布、工作室日期与曝光回填、发推回推对账、延迟保护、官方向下校正、奖励净增、粉丝净变、后台任务、提醒、分享摘要与分享来源校验。测试使用模拟响应，不代表每次 X 页面更新后的线上行为均已实测。
