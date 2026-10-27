@@ -31,7 +31,10 @@
   function dataURL(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('面板图片转换失败，请重试。'));reader.readAsDataURL(blob);});}
   async function capture(shell,avatarData=''){
     const main=shell.querySelector('main'),width=Math.ceil(shell.getBoundingClientRect().width);
-    const height=Math.ceil(shell.getBoundingClientRect().height-main.clientHeight+main.scrollHeight);
+    const footerHeight=shell.querySelector('footer')?.getBoundingClientRect().height||0;
+    const versionHeight=shell.querySelector('#update-bar')?.getBoundingClientRect().height||0;
+    const creditHeight=32;
+    const height=Math.ceil(shell.getBoundingClientRect().height-main.clientHeight+main.scrollHeight-footerHeight-versionHeight+creditHeight);
     const clone=shell.cloneNode(true),originals=[shell,...shell.querySelectorAll('*')],copies=[clone,...clone.querySelectorAll('*')];
     const resources=new Map();
     async function inline(raw){
@@ -44,6 +47,7 @@
     const work=[];
     for(let i=0;i<originals.length;i++){
       const source=originals[i],target=copies[i],style=getComputedStyle(source);
+      if(source.closest('footer,#update-bar')){target.remove();continue;}
       if(source.closest('.view')?.id&&source.closest('.view').id!=='home'){target.remove();continue;}
       for(const property of style)target.style.setProperty(property,style.getPropertyValue(property));
       target.style.animation='none';target.style.transition='none';
@@ -68,7 +72,9 @@
     clone.style.width=width+'px';clone.style.height=height+'px';clone.style.position='relative';clone.style.margin='0';
     const cloneMain=clone.querySelector('main');cloneMain.style.height=main.scrollHeight+'px';cloneMain.style.flex='none';cloneMain.style.overflow='visible';
     for(const id of ['notice','reminder-alert']){const element=clone.querySelector('#'+id);if(element){element.hidden=true;element.style.display='none';}}
-    const share=clone.querySelector('#share');if(share){share.textContent='↗ 分享';share.disabled=false;share.style.opacity='1';}
+    const credit=document.createElement('div');credit.textContent='作者 𝕏｜八万（@0xbawan）';
+    credit.style.cssText=`height:${creditHeight}px;min-height:${creditHeight}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin:0 15px;border-top:1px solid #b29a5a35;color:#c5b589;font:11px/1.4 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;white-space:nowrap`;
+    clone.append(credit);
     await Promise.all(work);await document.fonts.ready;
     const wrapper=document.createElementNS('http://www.w3.org/1999/xhtml','div');wrapper.style.cssText=`width:${width}px;height:${height}px;background:#0b1a1b;border-radius:14px;overflow:hidden`;wrapper.append(clone);
     const xml=new XMLSerializer().serializeToString(wrapper);

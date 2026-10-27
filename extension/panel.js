@@ -15,7 +15,7 @@
     $(id).title=delta==null?`${date||''} 没有飞升进度记录`.trim():track.partial?`${date} 首次观测后净增，非完整全天`:`${date} 最新进度减前一天末次进度（滚动净变化）`;
   }
   let checkingUpdate=false,updateRequested=false;
-  const installedVersion=globalThis.chrome?.runtime?.getManifest?.().version||'0.1.16';
+  const installedVersion=globalThis.chrome?.runtime?.getManifest?.().version||'0.1.17';
   text('installed-version','v'+installedVersion);
   async function checkUpdates(force=false){
     if(checkingUpdate)return;
@@ -123,7 +123,7 @@
   $('reminder-write').onclick=()=>{if(state)state.reminder={...state.reminder,acknowledgedPost:state.lastPost};tell({type:'dismissReminder'});reminderVisible(false,null,0);};
   $('settings-form').onsubmit=e=>{e.preventDefault();if(!state)return notice('请先登录 X 并确认账号。',true);const f=new FormData(e.currentTarget),value={...state.settings};for(const k of ['posts','replies','reminderMinutes','dailyQualifiedGoal'])if(f.has(k))value[k]=Number(f.get(k));value.reminderEnabled=e.currentTarget.elements.reminderEnabled.checked;value.autoReward=e.currentTarget.elements.autoReward.checked;tell({type:'settings',value});};
   $('reward-form').onsubmit=e=>{e.preventDefault();if(!state)return;const f=new FormData(e.currentTarget);const value=Object.fromEntries(['qualified90d','verifiedFollowers'].map(k=>[k,f.get(k)===''?null:Number(f.get(k))]));tell({type:'reward',value});select('home');};
-  $('export').onclick=()=>{if(!state)return;const blob=new Blob([JSON.stringify({app:'X 修仙',version:'0.1.16',exportedAt:new Date().toISOString(),...state},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`X修仙-${state.profile.handle}-${state.today.date}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);};
+  $('export').onclick=()=>{if(!state)return;const blob=new Blob([JSON.stringify({app:'X 修仙',version:'0.1.17',exportedAt:new Date().toISOString(),...state},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`X修仙-${state.profile.handle}-${state.today.date}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);};
   function draggable(element,isOrb=false){let start=null,moved=false;element.addEventListener('pointerdown',e=>{if(e.target.closest('button,a')&&!isOrb)return;if(e.button!==0)return;start={x:e.screenX,y:e.screenY};moved=false;element.setPointerCapture(e.pointerId);tell({type:'drag-start',screenX:e.screenX,screenY:e.screenY});});element.addEventListener('pointermove',e=>{if(!start)return;if(Math.abs(e.screenX-start.x)+Math.abs(e.screenY-start.y)>4)moved=true;tell({type:'drag-move',screenX:e.screenX,screenY:e.screenY});});const end=()=>{if(!start)return;start=null;tell({type:'drag-end'});};element.addEventListener('pointerup',()=>{end();if(isOrb&&!moved)tell({type:'toggle'});});element.addEventListener('pointercancel',end);element.addEventListener('lostpointercapture',end);element.addEventListener('keydown',e=>{const d={ArrowLeft:[-10,0],ArrowRight:[10,0],ArrowUp:[0,-10],ArrowDown:[0,10]}[e.key];if(d){e.preventDefault();tell({type:'move-key',dx:d[0],dy:d[1]});}else if(isOrb&&(e.key==='Enter'||e.key===' ')){e.preventDefault();tell({type:'toggle'});}});}
   draggable($('drag'));draggable($('orb'),true);$('avatar').onerror=()=>{$('avatar').hidden=true;$('avatar-fallback').hidden=false;};
   setInterval(timer,1000);setInterval(()=>{if(!document.hidden&&!$('shell').hidden)checkUpdates();},60*60*1000);
