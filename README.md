@@ -5,7 +5,7 @@
   <h1>X 修仙 · 创作者洞府</h1>
   <p>在 X 页面里，把每日创作、交流与数据增长，收进一座修仙洞府。</p>
   <p>
-    <img src="https://img.shields.io/badge/version-0.1.19-173e34" alt="Version 0.1.19">
+    <img src="https://img.shields.io/badge/version-0.1.20-173e34" alt="Version 0.1.20">
     <img src="https://img.shields.io/badge/Chrome-116%2B-4285F4?logo=googlechrome&logoColor=white" alt="Chrome 116+">
     <img src="https://img.shields.io/badge/Manifest-V3-6d7772" alt="Manifest V3">
     <img src="https://img.shields.io/badge/数据-本机保存-173e34" alt="数据本机保存">
@@ -56,7 +56,7 @@
 
 目前通过 Chrome 的「加载已解压的扩展程序」安装，尚未上架 Chrome 应用商店。
 
-1. 前往 [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest)，下载 **`x-xiuxian-v0.1.19.zip`** 并解压。
+1. 前往 [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest)，下载 **`x-xiuxian-v0.1.20.zip`** 并解压。
 2. 在 Chrome 地址栏输入 `chrome://extensions`，开启右上角「开发者模式」。
 3. 点击「加载已解压的扩展程序」，选择解压后的 **X修仙** 文件夹，里面应有 `manifest.json`。
 4. 打开并登录 [X](https://x.com)，刷新页面，即可看到悬浮洞府。
@@ -165,6 +165,10 @@ Release 同时提供 `SHA256SUMS.txt`，供校验安装包。
 
 账号验证截图、个人数据记录和旧设计候选仅保留在本地，不包含在源码或安装包中。
 
+## 面板恢复
+
+面板会确认脚本与样式已就绪，并定期检查连接。内嵌窗口变空白或样式丢失时，会显示同色恢复界面并自动重连，最多连续重试 3 次；失败后可点击「重新连接」。展开状态、位置和账号记录会保留。若扩展已重载或更新，原 X 标签页会显示刷新提示，由你点击后刷新，避免自动打断草稿。
+
 ## 使用限制
 
 - 面向桌面 Chrome 116 或更新版本开发；插件当前界面为中文。
@@ -183,7 +187,7 @@ Release 同时提供 `SHA256SUMS.txt`，供校验安装包。
 npm test                # 数据、发布事件与后台流程测试
 npm run check           # 重新构建，检查脚本、清单与资源
 npm run preview         # http://127.0.0.1:4178/demo.html
-npm run package         # release/x-xiuxian-v0.1.19.zip
+npm run package         # release/x-xiuxian-v0.1.20.zip
 ```
 
 当前 **47 项回归测试通过**，覆盖账号隔离、事件去重、成功 / 失败发布、工作室日期与曝光回填、发推回推对账、延迟保护、官方向下校正、奖励净增、粉丝净变、后台任务、提醒、分享摘要与分享来源校验。测试使用模拟响应，不代表每次 X 页面更新后的线上行为均已实测。
@@ -196,6 +200,7 @@ npx playwright install chromium
 npm run docs:screenshots
 npm run test:ui          # 独立临时浏览器加载真实扩展，模拟 X / GitHub 响应
 npm run test:share       # 真实扩展与模拟编辑栏：文字、PNG、草稿保护、不自动发布
+npm run test:panel       # 白板恢复、样式丢失、重试上限、页面恢复与扩展重载
 ```
 
 Playwright 用于文档截图和界面回归验证，不参与扩展运行。真实扩展验证覆盖项目入口、自动与手动检查、新版本提示、离线错误、缓存复用、收起展开和窄窗口布局。截图脚本不会读取现有 Chrome 配置或主动删除本地文件。

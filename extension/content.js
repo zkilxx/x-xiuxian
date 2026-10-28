@@ -1,16 +1,54 @@
 (() => {
   'use strict';
   if (document.getElementById('xian-extension-host')) return;
-  const channel=crypto.randomUUID();
-  let frameReady=false;
+  let channel=crypto.randomUUID();
+  const extensionOrigin=chrome.runtime.getURL('').replace(/\/$/,''),panelURL=chrome.runtime.getURL('panel.html');
+  let frameReady=false,shadow,fallback,fallbackTitle,fallbackDetail,reconnectButton,healthTimer,retryTimer,waiting,retries=0,failed=false,disconnected=false;
   let host, frame, profile=null, lastHandle='', latest=null, drag=null, pending=[], captureTimer, refreshTimer;
   let panelHeight=720;
   let position={x:Math.max(12,innerWidth-390),y:80,collapsed:false};
-  const ask=async message=>{const r=await chrome.runtime.sendMessage(message);if(!r?.ok)throw new Error(r?.error||'扩展连接已断开，请刷新 X 页面。');return r.data;};
-  const send=message=>frameReady&&frame?.contentWindow?.postMessage({source:'xian-parent-v1',channel,...message},chrome.runtime.getURL('').slice(0,-1));
-  const showError=e=>send({type:'error',error:e.message||String(e)});
+  const runtimeAlive=()=>{try{return !!chrome.runtime?.id;}catch{return false;}};
+  const ask=async message=>{try{if(!runtimeAlive())throw new Error('Extension context invalidated');const r=await chrome.runtime.sendMessage(message);if(!r?.ok)throw new Error(r?.error||'扩展连接已断开，请刷新 X 页面。');return r.data;}catch(error){if(!runtimeAlive()||/Extension context invalidated/i.test(error.message))disconnect();throw error;}};
+  const send=message=>frameReady&&frame?.contentWindow?.postMessage({source:'xian-parent-v1',channel,...message},extensionOrigin);
+  const showError=e=>{if(!disconnected)send({type:'error',error:e.message||String(e)});};
+  function connectionState(status,title,detail){
+    if(!host||!fallback)return;host.dataset.xianStatus=status;fallbackTitle.textContent=title;fallbackDetail.textContent=detail;fallback.hidden=false;if(frame)frame.style.visibility='hidden';
+    reconnectButton.textContent=position.collapsed?'𝕏':disconnected?'刷新 X 页面':'重新连接';reconnectButton.title=title+'：'+detail;
+  }
+  function disconnect(){
+    disconnected=true;frameReady=false;waiting=null;clearInterval(healthTimer);clearInterval(refreshTimer);clearTimeout(retryTimer);
+    connectionState('updated','扩展连接已断开','扩展可能已重载或更新，请刷新 X 页面以恢复。');
+  }
+  function syncFrame(){send({type:'collapsed',value:position.collapsed});if(latest)send({type:'state',data:latest});else send({type:'locked'});}
+  function probe(){
+    if(!frame||waiting||disconnected||failed)return;waiting={id:crypto.randomUUID(),at:Date.now()};
+    // The probe contains no account data; it can reach an empty frame after a failed navigation.
+    frame.contentWindow?.postMessage({source:'xian-parent-v1',channel,type:'ping',id:waiting.id},'*');
+  }
+  function recover(){
+    if(retryTimer||disconnected)return;frameReady=false;waiting=null;
+    if(++retries>3){failed=true;connectionState('failed','洞府暂时无法加载','自动重连未成功，可点击重新连接；数据仍保存在本机。');return;}
+    connectionState('reconnecting','正在重新连接洞府','面板加载中，修行数据不会被清空。');
+    retryTimer=setTimeout(()=>{retryTimer=null;connectPanel();},1000*2**(retries-1));
+  }
+  function connectPanel(){
+    if(!runtimeAlive()){disconnect();return;}frameReady=false;waiting=null;channel=crypto.randomUUID();
+    connectionState(retries?'reconnecting':'loading','正在加载洞府','正在确认面板连接…');
+    const old=frame;frame=document.createElement('iframe');const current=frame;
+    frame.title='X 修仙 · 创作者洞府';frame.allow='autoplay';frame.setAttribute('scrolling','no');
+    Object.assign(frame.style,{position:'absolute',inset:'0',width:'100%',height:'100%',border:'0',display:'block',colorScheme:'dark',background:'#0b1a1b',visibility:'hidden'});
+    frame.addEventListener('load',()=>{if(current!==frame||failed||disconnected)return;frameReady=false;waiting=null;connectionState('loading','正在加载洞府','正在确认面板连接…');probe();});
+    frame.addEventListener('error',()=>{if(current===frame)recover();});
+    frame.src=panelURL+'#'+channel;shadow.prepend(frame);old?.remove();probe();
+  }
+  function checkPanel(){
+    if(!runtimeAlive()){disconnect();return;}if(document.hidden||!host)return;
+    if(!host.isConnected&&document.body){document.body.append(host);connectPanel();return;}
+    if(failed||retryTimer)return;if(waiting){if(Date.now()-waiting.at>8000)recover();}else probe();
+  }
+  function startHealth(){clearInterval(healthTimer);if(!disconnected)healthTimer=setInterval(checkPanel,2000);}
   function clamp() {
-    if(!host)return;const w=position.collapsed?56:Math.min(372,innerWidth-20),h=position.collapsed?56:Math.min(panelHeight,innerHeight-24);
+    if(!host)return;if(fallback){fallback.dataset.collapsed=String(position.collapsed);reconnectButton.textContent=position.collapsed?'𝕏':disconnected?'刷新 X 页面':'重新连接';}const w=position.collapsed?56:Math.min(372,innerWidth-20),h=position.collapsed?56:Math.min(panelHeight,innerHeight-24);
     position.x=Math.max(10,Math.min(position.x,innerWidth-w-10));position.y=Math.max(10,Math.min(position.y,innerHeight-h-10));
     Object.assign(host.style,{left:position.x+'px',top:position.y+'px',width:w+'px',height:h+'px'});
     send({type:'collapsed',value:position.collapsed});
@@ -66,7 +104,8 @@
     try{const data=await ask({type:'snapshot',handle:h});if(lastHandle===h){latest=data;send({type:'state',data});}}catch(e){showError(e);}
   }
   window.addEventListener('message',event=>{
-    const observerOrigin=event.origin===location.origin||event.origin===chrome.runtime.getURL('').replace(/\/$/,'')||event.origin==='null';
+    if(!runtimeAlive()){disconnect();return;}
+    const observerOrigin=event.origin===location.origin||event.origin===extensionOrigin||event.origin==='null';
     if(observerOrigin&&event.data?.source==='xian-studio-raw-v1'&&profile&&location.pathname.startsWith('/i/account_analytics')){ask({type:'studioRaw',handle:profile.handle,raw:event.data.raw}).then(data=>{latest=data;send({type:'state',data});}).catch(showError);return;}
     if(observerOrigin&&event.data?.source==='xian-studio-v1'&&profile&&location.pathname.startsWith('/i/account_analytics')){ask({type:'studio',handle:profile.handle,rows:event.data.rows}).then(data=>{latest=data;send({type:'state',data});}).catch(showError);return;}
     if(observerOrigin&&event.data?.source==='xian-created-v1'&&profile){const t=event.data.value;if(t?.author===profile.handle&&t.source==='published'){schedule({users:[],tweets:[t]});if(t.reply)globalThis.XianFeedback.replyPlus(t.id);}return;}
@@ -74,9 +113,13 @@
     if(observerOrigin && event.data?.source==='xian-observer-v1'){
       if(profile&&event.data.payload&&Array.isArray(event.data.payload.tweets)&&Array.isArray(event.data.payload.users))schedule(event.data.payload);return;
     }
-    if(!frame||(event.source!==null&&event.source!==frame.contentWindow)||(![chrome.runtime.getURL('').replace(/\/$/,''),'null'].includes(event.origin))||event.data?.source!=='xian-panel-v1'||event.data.channel!==channel)return;
+    if(!frame||(event.source!==null&&event.source!==frame.contentWindow)||(![extensionOrigin,'null'].includes(event.origin))||event.data?.source!=='xian-panel-v1'||event.data.channel!==channel)return;
     const m=event.data;
-    if(m.type==='ready'){frameReady=true;send({type:'collapsed',value:position.collapsed});if(latest)send({type:'state',data:latest});else send({type:'locked'});return;}
+    if(m.type==='ready'){frameReady=true;syncFrame();probe();return;}
+    if(m.type==='pong'&&waiting?.id===m.id){
+      waiting=null;if(!m.painted){recover();return;}const needsSync=!frameReady;frameReady=true;retries=0;failed=false;clearTimeout(retryTimer);retryTimer=null;
+      host.dataset.xianStatus='ready';fallback.hidden=true;frame.style.visibility='visible';if(needsSync)syncFrame();return;
+    }
     if(m.type==='drag-start'){drag={x:position.x,y:position.y,screenX:m.screenX,screenY:m.screenY};return;}
     if(m.type==='drag-move'&&drag){position.x=drag.x+m.screenX-drag.screenX;position.y=drag.y+m.screenY-drag.screenY;clamp();return;}
     if(m.type==='drag-end'){drag=null;ask({type:'position',value:position}).catch(showError);return;}
@@ -96,16 +139,28 @@
   async function mount(){
     if(!document.body)return setTimeout(mount,100);
     if(location.hash==='#xian-background'){await identify();let timer=setInterval(()=>{identify();readReward();readProfile();if(location.pathname.startsWith('/i/account_analytics')){if(profile)ask({type:'diagnostic',handle:profile.handle,value:{operation:'studio-page',shape:[document.readyState,document.title,'primary='+!!document.querySelector('[data-testid=primaryColumn]')],resources:performance.getEntriesByType('resource').map(e=>{try{const u=new URL(e.name);return ['https://x.com','https://api.x.com'].includes(u.origin)&&(/\/i\/api\//.test(u.pathname)||u.origin==='https://api.x.com')&&!/grok|jwt|token|chat|message/i.test(u.pathname)?u.pathname:null;}catch{return null;}}).filter(Boolean).slice(-30)}}).catch(()=>{});}},1500);setTimeout(()=>clearInterval(timer),65000);return;}
-    host=document.createElement('div');host.id='xian-extension-host';Object.assign(host.style,{position:'fixed',zIndex:'2147483600',colorScheme:'dark',border:'0',borderRadius:'15px',overflow:'hidden',boxShadow:'0 14px 60px #0007'});
-    const shadow=host.attachShadow({mode:'closed'});frame=document.createElement('iframe');frame.src=chrome.runtime.getURL('panel.html')+'#'+channel;frame.title='X 修仙 · 创作者洞府';frame.allow='autoplay';frame.setAttribute('scrolling','no');frame.addEventListener('load',()=>{frameReady=true;send({type:'collapsed',value:position.collapsed});if(latest)send({type:'state',data:latest});});Object.assign(frame.style,{width:'100%',height:'100%',border:'0',display:'block',colorScheme:'dark'});shadow.append(frame);document.body.append(host);
+    host=document.createElement('div');host.id='xian-extension-host';Object.assign(host.style,{position:'fixed',zIndex:'2147483600',colorScheme:'dark',border:'0',borderRadius:'15px',overflow:'hidden',background:'#0b1a1b',boxShadow:'0 14px 60px #0007'});
+    shadow=host.attachShadow({mode:'closed'});
+    const style=document.createElement('style');style.textContent=`#connection{position:absolute;inset:0;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;padding:24px;background:#0b1a1b;border:1px solid #b59c67;border-radius:14px;color:#ede7d4;font:12px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;text-align:center}#connection[hidden]{display:none}.mark{font:38px Georgia,serif;color:#7fdbb7}.detail{color:#a0b0ab;margin:0}button{font:inherit;cursor:pointer;border:1px solid #89754e;border-radius:5px;background:#173e34;color:#e6c587;padding:6px 14px}#connection[data-collapsed="true"]{padding:0;gap:0}#connection[data-collapsed="true"] .copy{display:none}#connection[data-collapsed="true"] button{width:54px;height:54px;border:0;border-radius:13px;padding:0;color:#7fdbb7;font:30px Georgia,serif}`;shadow.append(style);
+    fallback=document.createElement('div');fallback.id='connection';fallback.setAttribute('role','status');fallback.dataset.collapsed=String(position.collapsed);
+    const mark=document.createElement('span');mark.className='mark copy';mark.textContent='𝕏';fallbackTitle=document.createElement('strong');fallbackTitle.className='copy';fallbackDetail=document.createElement('p');fallbackDetail.className='detail copy';
+    reconnectButton=document.createElement('button');reconnectButton.type='button';reconnectButton.setAttribute('aria-label','恢复 X 修仙面板');reconnectButton.onclick=()=>{if(disconnected||!runtimeAlive()){location.reload();return;}retries=0;failed=false;clearTimeout(retryTimer);retryTimer=null;connectPanel();};
+    fallback.append(mark,fallbackTitle,fallbackDetail,reconnectButton);shadow.append(fallback);document.body.append(host);clamp();connectPanel();startHealth();
     try{position={...position,...await ask({type:'getPosition'})};}catch(e){showError(e);}clamp();await identify();if(profile&&latest?.settings.autoReward)ask({type:'scanStudio',handle:profile.handle}).catch(()=>{});
     // A light observer catches SPA account changes; a timer ensures midnight resets even on an idle page.
     let debounce;new MutationObserver(()=>{clearTimeout(debounce);debounce=setTimeout(()=>{identify();readReward();},400);}).observe(document.body,{subtree:true,childList:true});
+    startRefresh();
+  }
+  function startRefresh(){
+    clearInterval(refreshTimer);if(disconnected)return;
     refreshTimer=setInterval(()=>{identify().then(refresh);readReward();readProfile();if(profile)ask({type:'diagnostic',handle:profile.handle,value:{resources:performance.getEntriesByType('resource').map(e=>{try{const u=new URL(e.name);return u.origin===location.origin&&u.pathname.includes('/i/api/')?u.pathname.split('/').pop():null;}catch{return null;}}).filter(Boolean).slice(-15)}}).catch(()=>{});if(profile&&latest?.settings.autoReward&&(!latest.reward||Date.now()-latest.reward.at>300000))ask({type:'scanStudio',handle:profile.handle}).catch(()=>{});},15000);
   }
   chrome.storage.onChanged.addListener((changes,area)=>{if(area==='local'&&profile&&changes['account:'+profile.handle])refresh();});
   chrome.runtime.onMessage.addListener(m=>{if(m.type==='resize'){panelHeight=Math.max(300,Math.min(720,Math.ceil(Number(m.height)||720)));clamp();return;}
     if(m.type==='attention'){if(position.collapsed){position.collapsed=false;clamp();}return;}
     if(m.type==='toggle'){position.collapsed=!position.collapsed;clamp();ask({type:'position',value:position}).catch(showError);}});
-  addEventListener('resize',clamp);addEventListener('pagehide',()=>{clearInterval(refreshTimer);clearTimeout(captureTimer);});mount();
+  addEventListener('resize',clamp);
+  addEventListener('pagehide',()=>{clearInterval(refreshTimer);clearInterval(healthTimer);clearTimeout(captureTimer);});
+  addEventListener('pageshow',e=>{if(e.persisted&&host){waiting=null;startRefresh();startHealth();checkPanel();refresh();}});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&host){waiting=null;checkPanel();refresh();}});mount();
 })();

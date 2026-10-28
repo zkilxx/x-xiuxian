@@ -5,7 +5,7 @@
   <h1>X Xiuxian · Creator Retreat</h1>
   <p>A movable cultivation-inspired dashboard for your daily writing and X creator stats.</p>
   <p>
-    <img src="https://img.shields.io/badge/version-0.1.19-173e34" alt="Version 0.1.19">
+    <img src="https://img.shields.io/badge/version-0.1.20-173e34" alt="Version 0.1.20">
     <img src="https://img.shields.io/badge/Chrome-116%2B-4285F4?logo=googlechrome&logoColor=white" alt="Chrome 116+">
     <img src="https://img.shields.io/badge/Manifest-V3-6d7772" alt="Manifest V3">
     <img src="https://img.shields.io/badge/Data-Local_storage-173e34" alt="Local data storage">
@@ -56,7 +56,7 @@ The panoramic landscape preserves the full composition, with the avatar overlapp
 
 Install as an unpacked Chrome extension. It is not currently listed in the Chrome Web Store.
 
-1. Open [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest), download **`x-xiuxian-v0.1.19.zip`** and extract it.
+1. Open [Releases](https://github.com/zkilxx/x-xiuxian/releases/latest), download **`x-xiuxian-v0.1.20.zip`** and extract it.
 2. Open `chrome://extensions` and turn on **Developer mode**.
 3. Click **Load unpacked** and select the extracted **X修仙** folder containing `manifest.json`.
 4. Sign in to [X](https://x.com) and refresh the page to display the floating panel.
@@ -165,6 +165,10 @@ There is no custom backend, telemetry or third-party AI request. Only clicking *
 
 Personal verification records, account screenshots and earlier design candidates remain local and are not included in the source repository or package.
 
+## Panel recovery
+
+The host confirms that panel scripts and styles are ready, then checks liveness periodically. An empty frame or missing stylesheet shows a matching recovery view and triggers up to three consecutive retries, followed by a manual reconnect action. Position, collapse state and account records are retained. An extension reload or update displays an explicit page-refresh action rather than automatically interrupting a draft.
+
 ## Limitations
 
 - Built for desktop Chrome 116 or later; the current interface is Chinese.
@@ -183,7 +187,7 @@ Core development requires Node.js 20+ and Python 3. The extension uses plain Jav
 npm test                # Data, publishing events and background flow tests
 npm run check           # Rebuild; verify scripts, manifest and assets
 npm run preview         # http://127.0.0.1:4178/demo.html
-npm run package         # release/x-xiuxian-v0.1.19.zip
+npm run package         # release/x-xiuxian-v0.1.20.zip
 ```
 
 All **47 regression tests pass**. Coverage includes account isolation, deduplication, successful and failed publishing, UTC boundaries, impression backfill, publishing reconciliation, lag protection, downward corrections, reward deltas, follower changes, background jobs, reminders, share summaries and source validation. Tests use simulated responses; they do not establish live compatibility after every X update.
@@ -196,6 +200,7 @@ npx playwright install chromium
 npm run docs:screenshots
 npm run test:ui          # Real extension, isolated profile, mocked X / GitHub responses
 npm run test:share       # Real extension, mocked composer: text, PNG, draft guards, no posting
+npm run test:panel       # Empty-frame and CSS recovery, retry limits, resume and extension reload
 ```
 
 Playwright is a development dependency for screenshots and UI checks, not an extension runtime dependency. The real-extension flow covers the repository link, automatic and manual checks, available updates, offline errors, caching, collapse/expand and a compact viewport. The screenshot script does not read your existing Chrome profile or automatically delete local files.

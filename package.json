@@ -1,6 +1,6 @@
 {
   "name": "x-xiuxian",
-  "version": "0.1.19",
+  "version": "0.1.20",
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.cjs",
@@ -10,7 +10,8 @@
     "preview": "python3 -m http.server 4178 --bind 127.0.0.1 --directory extension",
     "package": "npm run build && python3 scripts/package.py",
     "build": "node scripts/build.cjs",
-    "docs:screenshots": "node scripts/capture-docs.cjs"
+    "docs:screenshots": "node scripts/capture-docs.cjs",
+    "test:panel": "node tests/panel-ui.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"
